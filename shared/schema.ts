@@ -120,4 +120,4 @@ export const createProjectSchema = insertProjectSchema.extend({
 });
 
 export type CreateProjectForm = z.infer<typeof createProjectFormSchema>;
-export type CreateProject = z.infer<typeof createProjectSchema>;
+export type CreateProject = InsertProject & { prompt: string };

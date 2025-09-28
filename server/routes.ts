@@ -131,7 +131,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
     res.json(project);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      return res.status(400).json({ message: "Invalid request data", errors: error.issues });
     }
     console.error("Error creating project:", error);
     res.status(500).json({ message: "Failed to create project" });

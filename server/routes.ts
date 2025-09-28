@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project routes
   app.get('/api/projects', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
       const projects = await storage.getUserProjects(userId);
       res.json(projects);
     } catch (error) {
@@ -58,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user owns the project
-      if (project.userId !== req.user.claims.sub) {
+      if (project.userId !== req.user.sub) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -147,7 +147,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      if (project.userId !== req.user.claims.sub) {
+      if (project.userId !== req.user.sub) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -168,7 +168,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      if (project.userId !== req.user.claims.sub) {
+      if (project.userId !== req.user.sub) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -211,7 +211,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
     try {
       const { templateId } = req.params;
       const { name, description } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.sub;
 
       const template = await storage.getTemplate(templateId);
       if (!template) {
@@ -246,7 +246,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      if (project.userId !== req.user.claims.sub) {
+      if (project.userId !== req.user.sub) {
         return res.status(403).json({ message: "Access denied" });
       }
 

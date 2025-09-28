@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "cross-env NODE_ENV=production node dist/index.js",
-    "check": "tsc",
+    "build": "tsc -p tsconfig.server.json && vite build",
+    "start": "cross-env NODE_ENV=production node dist/server/index.js",
+    "check": "tsc -p tsconfig.server.json --noEmit",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -53,8 +53,8 @@
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.2",
-    "drizzle-orm": "^0.39.1",
-    "drizzle-zod": "^0.7.0",
+    "drizzle-orm": "^0.39.3",
+    "drizzle-zod": "^0.7.1",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
@@ -71,6 +71,7 @@
     "openid-client": "^6.8.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -85,7 +86,7 @@
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "zod": "^3.24.2",
+    "zod": "^3.25.76",
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
@@ -112,7 +113,7 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
-    "typescript": "5.6.3",
+    "typescript": "^5.6.3",
     "vite": "^5.4.20"
   },
   "optionalDependencies": {

@@ -11,7 +11,9 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table
+//
+// ✅ Session storage table
+//
 export const sessions = pgTable(
   "sessions",
   {
@@ -19,10 +21,14 @@ export const sessions = pgTable(
     sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
-  (table) => [index("IDX_session_expire").on(table.expire)]
+  (table) => ({
+    expireIdx: index("IDX_session_expire").on(table.expire),
+  })
 );
 
-// User table
+//
+// ✅ Users table
+//
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
@@ -33,7 +39,9 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Projects table
+//
+// ✅ Projects table
+//
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id")
@@ -51,7 +59,9 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Templates table
+//
+// ✅ Templates table
+//
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -65,7 +75,9 @@ export const templates = pgTable("templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+//
 // ✅ Type exports
+//
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
@@ -75,7 +87,9 @@ export type Project = typeof projects.$inferSelect;
 export type InsertTemplate = typeof templates.$inferInsert;
 export type Template = typeof templates.$inferSelect;
 
+//
 // ✅ Validation schemas
+//
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -87,7 +101,9 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({
   createdAt: true,
 });
 
+//
 // ✅ Form schema (frontend)
+//
 export const createProjectFormSchema = z.object({
   name: z.string().min(3, "اسم المشروع مطلوب"),
   framework: z.string().min(2, "يجب اختيار الإطار (framework)"),
@@ -96,7 +112,9 @@ export const createProjectFormSchema = z.object({
   prompt: z.string().min(10, "يجب أن يكون الوصف 10 أحرف على الأقل"),
 });
 
+//
 // ✅ Backend validation schema
+//
 export const createProjectSchema = insertProjectSchema.extend({
   prompt: z.string().min(10, "يجب أن يكون الوصف 10 أحرف على الأقل"),
 });

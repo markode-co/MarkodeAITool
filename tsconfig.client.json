@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",  
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "baseUrl": "client/src",
+    "paths": {
+      "@/*": ["*"],
+      "@shared/*": ["../shared/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["client/src/**/*", "shared/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

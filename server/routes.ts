@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { authMiddleware, generateToken, AuthRequest } from "./auth";
-import { generateProjectCode, improveCode } from "./openai";
+import { storage } from "./storage.js";
+import { authMiddleware, generateToken, AuthRequest } from "./auth.js";
+import { generateProjectCode, improveCode } from "./openai.js";
 import { createProjectFormSchema } from "../shared/schema.js";
 import { z } from "zod";
 import Stripe from "stripe";
@@ -116,14 +116,14 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
       validatedData.framework,
       validatedData.language || undefined
     )
-    .then(async (generatedCode) => {
+    .then(async (generatedCode: any) => {
       console.log(`✅ Code generation successful for project ${project.id}`);
       await storage.updateProject(project.id, {
         sourceCode: generatedCode,
         status: 'ready',
       });
     })
-    .catch(async (error) => {
+    .catch(async (error: unknown) => {
       console.error(`❌ Error generating code for project ${project.id}:`, error);
       await storage.updateProject(project.id, { status: 'error' });
     });
@@ -351,7 +351,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
       return res.status(503).json({ error: "PayPal service not configured" });
     }
     try {
-      const { loadPaypalDefault } = await import("./paypal");
+      const { loadPaypalDefault } = await import("./paypal.js");
       await loadPaypalDefault(req, res);
     } catch (error) {
       res.status(500).json({ error: "PayPal service unavailable" });
@@ -363,7 +363,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
       return res.status(503).json({ error: "PayPal service not configured" });
     }
     try {
-      const { createPaypalOrder } = await import("./paypal");
+      const { createPaypalOrder } = await import("./paypal.js");
       await createPaypalOrder(req, res);
     } catch (error) {
       res.status(500).json({ error: "PayPal service unavailable" });
@@ -375,7 +375,7 @@ app.post('/api/projects', async (req: AuthRequest, res) => {
       return res.status(503).json({ error: "PayPal service not configured" });
     }
     try {
-      const { capturePaypalOrder } = await import("./paypal");
+      const { capturePaypalOrder } = await import("./paypal.js");
       await capturePaypalOrder(req, res);
     } catch (error) {
       res.status(500).json({ error: "PayPal service unavailable" });

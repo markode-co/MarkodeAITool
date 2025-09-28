@@ -8,10 +8,10 @@
     "skipLibCheck": true,
     "strict": true,
     "baseUrl": ".",
+    "outDir": "dist",
     "paths": {
       "@shared/*": ["./shared/*"]
-    },
-    "outDir": "dist"
+    }
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist"]

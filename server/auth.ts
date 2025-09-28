@@ -7,12 +7,26 @@ export interface AuthRequest extends Request {
   user?: any;
 }
 
+// دالة لتوليد التوكن (JWT)
 export function generateToken(userId: string) {
   return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+  const publicPaths = [
+    "/api/login",
+    "/favicon.ico",
+    "/",
+    "/assets",
+    "/public",
+  ];
+
+  if (publicPaths.some((path) => req.path.startsWith(path))) {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" });
   }

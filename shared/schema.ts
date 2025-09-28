@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from "drizzle-orm";
 import {
   index,
   jsonb,
@@ -11,7 +11,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table.
+// Session storage table
 export const sessions = pgTable(
   "sessions",
   {
@@ -19,10 +19,10 @@ export const sessions = pgTable(
     sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
-  (table) => [index("IDX_session_expire").on(table.expire)],
+  (table) => [index("IDX_session_expire").on(table.expire)]
 );
 
-// User storage table.
+// User table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
@@ -36,25 +36,27 @@ export const users = pgTable("users", {
 // Projects table
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  framework: varchar("framework").notNull(), // react, vue, angular, etc.
-  language: varchar("language").default("javascript"), // javascript, typescript, python, etc.
-  status: varchar("status").default("draft"), // draft, building, ready, deployed, error
-  sourceCode: jsonb("source_code"), // Generated code files
-  deployUrl: varchar("deploy_url"), // Deployment URL
+  framework: varchar("framework").notNull(),
+  language: varchar("language").default("javascript"),
+  status: varchar("status").default("draft"),
+  sourceCode: jsonb("source_code"),
+  deployUrl: varchar("deploy_url"),
   isPublic: boolean("is_public").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Project templates table
+// Templates table
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
-  category: varchar("category").notNull(), // ecommerce, portfolio, blog, etc.
+  category: varchar("category").notNull(),
   framework: varchar("framework").notNull(),
   language: varchar("language").default("javascript"),
   sourceCode: jsonb("source_code").notNull(),
@@ -63,6 +65,7 @@ export const templates = pgTable("templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ✅ Type exports
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
@@ -72,6 +75,7 @@ export type Project = typeof projects.$inferSelect;
 export type InsertTemplate = typeof templates.$inferInsert;
 export type Template = typeof templates.$inferSelect;
 
+// ✅ Validation schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -83,14 +87,16 @@ export const insertTemplateSchema = createInsertSchema(templates).omit({
   createdAt: true,
 });
 
-// Schema for form submission (excludes userId which is set by backend)
-export const createProjectFormSchema = insertProjectSchema.omit({
-  userId: true,
-}).extend({
+// ✅ Form schema (frontend)
+export const createProjectFormSchema = z.object({
+  name: z.string().min(3, "اسم المشروع مطلوب"),
+  framework: z.string().min(2, "يجب اختيار الإطار (framework)"),
+  language: z.string().default("javascript"),
+  description: z.string().optional(),
   prompt: z.string().min(10, "يجب أن يكون الوصف 10 أحرف على الأقل"),
 });
 
-// Schema for backend validation (includes userId)
+// ✅ Backend validation schema
 export const createProjectSchema = insertProjectSchema.extend({
   prompt: z.string().min(10, "يجب أن يكون الوصف 10 أحرف على الأقل"),
 });

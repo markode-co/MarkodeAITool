@@ -4,8 +4,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "build": "npm install --include=dev && tsc -p tsconfig.server.json && vite build",
+    "dev": "ts-node-dev --respawn --transpile-only server/index.ts",
+    "build": "tsc && cd client && npm install && npm run build && cd .. && mkdir -p dist/server/public && cp -r client/dist/* dist/server/public/",
     "start": "cross-env NODE_ENV=production node dist/server/index.js",
     "check": "tsc -p tsconfig.server.json --noEmit",
     "db:push": "drizzle-kit push"

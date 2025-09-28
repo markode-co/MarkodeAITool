@@ -13,7 +13,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/login", {
+      const API_URL = import.meta.env.VITE_API_URL || "https://markode-ai-tool.onrender.com";
+
+      const res = await fetch(`${API_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),

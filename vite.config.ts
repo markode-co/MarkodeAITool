@@ -20,7 +20,7 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
-  },
+  }, 
   server: {
     port: 5173,
     open: true,

@@ -112,7 +112,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/memoizee": "^0.4.12",
     "@types/nanoid": "^2.1.0",
-    "@types/node": "^20.19.17",
+    "@types/node": "^20.19.19",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
     "@types/react": "^18.3.24",

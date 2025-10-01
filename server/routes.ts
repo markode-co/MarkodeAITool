@@ -84,7 +84,7 @@ app.post("/api/login", (req, res) => {
 app.use(authMiddleware);
 
 // استرجاع بيانات المستخدم الحالي
-app.get("/api/auth/user", async (req: AuthRequest, res) => {
+app.get("/api/auth/user", async (req: any, res) => {
   try {
     const userId = req.user.sub;
     const user = await storage.getUser(userId);
@@ -96,7 +96,7 @@ app.get("/api/auth/user", async (req: AuthRequest, res) => {
 });
 
 // إنشاء مشروع جديد
-app.post('/api/projects', async (req: AuthRequest, res) => {
+app.post('/api/projects', async (req: any, res) => {
   try {
     const userId = req.user.sub;
     const validatedData = createProjectFormSchema.parse(req.body);

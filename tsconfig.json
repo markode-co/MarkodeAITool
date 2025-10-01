@@ -13,11 +13,9 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["shared/*"],
-      "@/*": ["client/src/*"]
-    },
-    "jsx": "react-jsx"   
+      "@shared/*": ["shared/*"]
+    }
   },
-  "include": ["shared", "client", "server"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["server", "shared"],
+  "exclude": ["node_modules", "dist", "client"]
 }

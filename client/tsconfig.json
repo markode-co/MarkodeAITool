@@ -4,14 +4,14 @@
     "module": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "jsx": "react-jsx",
-    "moduleResolution": "bundler",
+    "moduleResolution": "Node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "baseUrl": "./src",
+    "baseUrl": "src",
     "paths": {
-      "@/*": ["*"],
+      "@/*": ["./*"],
       "@shared/*": ["../shared/*"]
     },
     "types": ["vite/client"]

@@ -5,9 +5,13 @@
   "license": "MIT",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only server/index.ts",
-    "build": "tsc && cd client && npm install && npm run build && cd .. && mkdir -p dist/server/public && cp -r client/dist/* dist/server/public/",
+    "build:server": "tsc -p tsconfig.json",
+    "build:client": "cd client && npm install && npm run build",
+    "build:copy": "node build-copy.js",
+    "build": "npm run build:server && npm run build:client && npm run build:copy",
+    "build:all": "npm run build:server ; cd client ; npm install ; npm run build ; cd .. ; node build-copy.js",
     "start": "cross-env NODE_ENV=production node dist/server/index.js",
-    "check": "tsc -p tsconfig.server.json --noEmit",
+    "check": "npx tsc -p tsconfig.server.json --noEmit",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -122,7 +126,7 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.3",
     "vite": "^5.4.20"
   },
   "optionalDependencies": {

@@ -15,7 +15,8 @@
     "paths": {
       "@shared/*": ["shared/*"],
       "@/*": ["client/src/*"]
-    }
+    },
+    "jsx": "react-jsx"   
   },
   "include": ["shared", "client", "server"],
   "exclude": ["node_modules", "dist"]

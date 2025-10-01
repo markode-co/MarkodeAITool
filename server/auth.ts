@@ -7,7 +7,6 @@ export interface AuthRequest extends Request {
   user?: any;
 }
 
-// دالة لتوليد التوكن (JWT)
 export function generateToken(userId: string) {
   return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: "7d" });
 }

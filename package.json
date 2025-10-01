@@ -5,11 +5,11 @@
   "license": "MIT",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only server/index.ts",
-    "build:server": "tsc -p tsconfig.json",
+    "build:server": "npx tsc -p tsconfig.json",
     "build:client": "cd client && npm install && npm run build",
     "build:copy": "node build-copy.js",
     "build": "npm run build:server && npm run build:client && npm run build:copy",
-    "build:all": "npm run build:server ; cd client ; npm install ; npm run build ; cd .. ; node build-copy.js",
+    "build:all": "npm run build:server && cd client && npm install && npm run build && cd .. && node build-copy.js",
     "start": "cross-env NODE_ENV=production node dist/server/index.js",
     "check": "npx tsc -p tsconfig.server.json --noEmit",
     "db:push": "drizzle-kit push"
@@ -121,10 +121,11 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
-    "cross-env": "^10.0.0",
+    "cross-env": "^10.1.0",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
+    "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
     "vite": "^5.4.20"

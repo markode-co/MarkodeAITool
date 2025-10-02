@@ -2,10 +2,9 @@ import { Code2 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { Link } from "wouter";
 
-export function Footer() {
+function Footer() {
   const { t } = useLanguage();
 
-  // Helper function to determine if we should use Link or anchor tag
   const renderLink = (link: { href: string; label: string }, testId: string) => {
     const isInternalRoute = link.href.startsWith('/') && !link.href.startsWith('#');
     
@@ -57,7 +56,6 @@ export function Footer() {
     <footer className="bg-muted/30 py-12 border-t">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
@@ -70,7 +68,6 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Product */}
           <div>
             <h4 className="font-semibold mb-4">{t("footer.product")}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -82,7 +79,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Support */}
           <div>
             <h4 className="font-semibold mb-4">{t("footer.support")}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -94,7 +90,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Company */}
           <div>
             <h4 className="font-semibold mb-4">{t("footer.company")}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -113,32 +108,16 @@ export function Footer() {
           </div>
 
           <div className="flex items-center gap-6">
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="social-twitter"
-            >
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               <i className="fab fa-twitter"></i>
             </a>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="social-linkedin"
-            >
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               <i className="fab fa-linkedin"></i>
             </a>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="social-github"
-            >
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               <i className="fab fa-github"></i>
             </a>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="social-discord"
-            >
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               <i className="fab fa-discord"></i>
             </a>
           </div>
@@ -147,3 +126,5 @@ export function Footer() {
     </footer>
   );
 }
+
+export default Footer;

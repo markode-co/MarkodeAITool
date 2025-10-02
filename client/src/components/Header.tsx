@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function Header() {
+function Header() {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t, isRTL } = useLanguage();
   const { user, isAuthenticated } = useAuth();
@@ -99,11 +99,7 @@ export function Header() {
             onClick={toggleTheme}
             data-testid="button-theme"
           >
-            {theme === "light" ? (
-              <Moon className="w-4 h-4" />
-            ) : (
-              <Sun className="w-4 h-4" />
-            )}
+            {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </Button>
 
           {/* Auth Section */}
@@ -127,17 +123,10 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => window.location.href = "/api/login"}
-                data-testid="button-login"
-              >
+              <Button variant="ghost" onClick={() => window.location.href = "/login"} data-testid="button-login">
                 {t("nav.login")}
               </Button>
-              <Button
-                onClick={() => window.location.href = "/api/login"}
-                data-testid="button-signup"
-              >
+              <Button onClick={() => window.location.href = "/signup"} data-testid="button-signup">
                 {t("nav.signup")}
               </Button>
             </div>
@@ -152,19 +141,17 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align={isRTL ? "start" : "end"}>
-                {isAuthenticated ? (
-                  authenticatedNavigation.map((item) => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link href={item.href}>{item.label}</Link>
-                    </DropdownMenuItem>
-                  ))
-                ) : (
-                  navigation.map((item) => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <a href={item.href}>{item.label}</a>
-                    </DropdownMenuItem>
-                  ))
-                )}
+                {isAuthenticated
+                  ? authenticatedNavigation.map((item) => (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link href={item.href}>{item.label}</Link>
+                      </DropdownMenuItem>
+                    ))
+                  : navigation.map((item) => (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <a href={item.href}>{item.label}</a>
+                      </DropdownMenuItem>
+                    ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -173,3 +160,5 @@ export function Header() {
     </header>
   );
 }
+
+export default Header;

@@ -6,18 +6,17 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "outDir": "../dist/server",
-    "baseUrl": ".",
+    "rootDir": "./",
+    "baseUrl": "../",
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["shared/*"]
     },
-    "noImplicitAny": false,
     "types": ["node", "express"]
   },
-  "include": ["**/*.ts", "../shared/**/*.ts"],
-  "exclude": ["node_modules", "dist", "../client"]
+    "include": ["**/*.ts", "../shared/**/*.ts", "../vite.config.ts"],
+    "exclude": ["node_modules", "dist", "../client"]
 }

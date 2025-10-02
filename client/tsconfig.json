@@ -9,9 +9,9 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "baseUrl": "src",
+    "baseUrl": ".", 
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["src/*"],
       "@shared/*": ["../shared/*"]
     },
     "types": ["vite/client"]

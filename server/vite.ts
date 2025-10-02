@@ -22,6 +22,9 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+/**
+ * 🧩 إعداد Vite أثناء التطوير (localhost)
+ */
 export async function setupVite(app: Express, server: Server) {
   const vite = await createViteServer({
     ...viteConfig,
@@ -41,8 +44,8 @@ export async function setupVite(app: Express, server: Server) {
 
     try {
       const clientTemplate = path.resolve(__dirname, "../client/index.html");
-
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
+
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -57,18 +60,22 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
+/**
+ * 🚀 يستخدم في الإنتاج (Render)
+ */
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "../public");
+  const distPath = path.resolve(__dirname, "../client/dist");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `❌ لم يتم العثور على مجلد البناء: ${distPath}\n➡️ تأكد من تشغيل "npm run build" داخل مجلد client`
     );
   }
 
+  // ✅ تقديم ملفات React المبنية
   app.use(express.static(distPath));
 
-  app.use("*", (_req, res) => {
+  app.get("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

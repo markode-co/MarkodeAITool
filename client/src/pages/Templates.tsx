@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Template } from "@shared/schema";
 import {
-  Search,
+  Search, 
   Filter,
   Code2,
   ExternalLink,

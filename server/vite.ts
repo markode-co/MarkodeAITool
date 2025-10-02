@@ -10,8 +10,6 @@ import { nanoid } from "nanoid";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const viteLogger = createLogger();
-
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -23,7 +21,7 @@ export function log(message: string, source = "express") {
 }
 
 /**
- * 🧩 إعداد Vite أثناء التطوير (localhost)
+ * 🧩 أثناء التطوير فقط (localhost)
  */
 export async function setupVite(app: Express, server: Server) {
   const vite = await createViteServer({
@@ -40,19 +38,15 @@ export async function setupVite(app: Express, server: Server) {
   app.use(vite.middlewares);
 
   app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-
     try {
       const clientTemplate = path.resolve(__dirname, "../client/index.html");
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
-
-      // إضافة كاش ID لتجنب تخزين المتصفح للنسخة القديمة
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
 
-      const page = await vite.transformIndexHtml(url, template);
+      const page = await vite.transformIndexHtml(req.originalUrl, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
@@ -65,7 +59,7 @@ export async function setupVite(app: Express, server: Server) {
  * 🚀 يستخدم في الإنتاج (Render)
  */
 export function serveStatic(app: Express) {
-  // ✅ هذا هو المسار الصحيح بعد النسخ في build-copy.js
+  // ✅ المسار الصحيح للمجلد بعد البناء
   const distPath = path.resolve(__dirname, "./public");
 
   if (!fs.existsSync(distPath)) {
@@ -74,10 +68,8 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // ✅ تقديم ملفات React المبنية
   app.use(express.static(distPath));
 
-  // ✅ توجيه أي طلب غير API إلى index.html (SPA)
   app.get("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });

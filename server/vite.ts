@@ -46,6 +46,7 @@ export async function setupVite(app: Express, server: Server) {
       const clientTemplate = path.resolve(__dirname, "../client/index.html");
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
 
+      // إضافة كاش ID لتجنب تخزين المتصفح للنسخة القديمة
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -64,7 +65,8 @@ export async function setupVite(app: Express, server: Server) {
  * 🚀 يستخدم في الإنتاج (Render)
  */
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "../client/dist");
+  // ✅ هذا هو المسار الصحيح بعد النسخ في build-copy.js
+  const distPath = path.resolve(__dirname, "./public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -75,6 +77,7 @@ export function serveStatic(app: Express) {
   // ✅ تقديم ملفات React المبنية
   app.use(express.static(distPath));
 
+  // ✅ توجيه أي طلب غير API إلى index.html (SPA)
   app.get("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });

@@ -13,9 +13,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "https://markode-ai-tool.onrender.com";
-
-      const res = await fetch(`${API_URL}/api/login`, {
+      const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
@@ -26,7 +24,7 @@ export default function Login() {
 
       localStorage.setItem("token", data.token);
       alert("✅ تم تسجيل الدخول بنجاح!");
-      window.location.href = "/"; // توجيه المستخدم إلى الصفحة الرئيسية
+      window.location.href = "/";
     } catch (err: any) {
       setError(err.message);
     } finally {

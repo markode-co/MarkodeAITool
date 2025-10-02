@@ -1,13 +1,22 @@
-/// <reference types="vite/client" />
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-interface ImportMetaEnv {
-  readonly VITE_API_URL: string
-  readonly VITE_PAYPAL_CLIENT_ID: string
-  readonly VITE_STRIPE_KEY?: string
-  readonly VITE_APP_NAME?: string
-  readonly VITE_ENV?: string
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv
-}
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": "/src",
+      "@shared": "../shared",
+    },
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+});

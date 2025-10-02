@@ -15,8 +15,9 @@
     "paths": {
       "@shared/*": ["shared/*"]
     },
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": ["node", "express"]
   },
-  "include": ["server", "shared"],
+  "include": ["server/**/*.ts", "shared/**/*.ts"],
   "exclude": ["node_modules", "dist", "client"]
 }

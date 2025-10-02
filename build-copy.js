@@ -2,7 +2,7 @@
 import fs from "fs";
 import path from "path";
 
-const src = path.join("client", "dist");
+const src = path.join("dist", "public");
 const dest = path.join("dist", "server", "public");
 
 fs.mkdirSync(dest, { recursive: true });

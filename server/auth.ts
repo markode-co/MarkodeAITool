@@ -11,20 +11,18 @@ export function generateToken(userId: string) {
   return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: "7d" });
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-  const publicPaths = [
-    "/api/login",
-    "/favicon.ico",
-    "/",
-    "/assets",
-    "/public",
-  ];
+export function authMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const publicPaths = ["/api/login", "/favicon.ico", "/", "/assets", "/public"];
 
-  if (publicPaths.some((path) => req.path.startsWith(path))) {
+  if (publicPaths.some((path) => req.originalUrl.startsWith(path))) {
     return next();
   }
 
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -36,7 +34,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ message: "Invalid token" });
   }
 }

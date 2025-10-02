@@ -164,6 +164,9 @@ importers:
       memorystore:
         specifier: ^1.6.7
         version: 1.6.7
+      module-alias:
+        specifier: ^2.2.3
+        version: 2.2.3
       monaco-editor:
         specifier: ^0.53.0
         version: 0.53.0
@@ -3124,6 +3127,9 @@ packages:
 
   modern-screenshot@4.6.6:
     resolution: {integrity: sha512-8tF0xEpe7yx37mK95UcIghSCWYeu628K2hLJl+ZNY2ANmRzYLlRLpquPHAQcL8keF6BoeEzTEw4GrgmUpGuZ8w==}
+
+  module-alias@2.2.3:
+    resolution: {integrity: sha512-23g5BFj4zdQL/b6tor7Ji+QY4pEfNH784BMslY9Qb0UnJWRAt+lQGLYmRaM0KDBwIG23ffEBELhZDP2rhi9f/Q==}
 
   monaco-editor@0.53.0:
     resolution: {integrity: sha512-0WNThgC6CMWNXXBxTbaYYcunj08iB5rnx4/G56UOPeL9UVIUGGHA1GR0EWIh9Ebabj7NpCRawQ5b0hfN1jQmYQ==}
@@ -6550,6 +6556,8 @@ snapshots:
   mitt@3.0.1: {}
 
   modern-screenshot@4.6.6: {}
+
+  module-alias@2.2.3: {}
 
   monaco-editor@0.53.0:
     dependencies:

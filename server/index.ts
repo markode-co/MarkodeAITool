@@ -5,11 +5,11 @@ import cors from "cors";
 import "dotenv/config";
 import "module-alias/register.js";
 import authGoogleRouter from "./auth-google.js"; 
+import path from "path";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5050;
 
-// ✅ إعداد CORS
 app.use(
   cors({
     origin: [
@@ -66,13 +66,17 @@ app.use((req, res, next) => {
     console.error("❌ Server Error:", err);
   });
 
-  if (app.get("env") === "development") {
+    if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "dist", "index.html"));
+  });
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 })();

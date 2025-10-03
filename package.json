@@ -11,7 +11,7 @@
     "build:server": "pnpm exec tsc -p server/tsconfig.json",
     "build:shared": "pnpm exec tsc -p shared/tsconfig.json",
     "build:client": "cd client && pnpm install --no-frozen-lockfile && pnpm exec vite build",
-    "build:copy": "node build-copy.js && xcopy shared dist\\shared /E /I /Y",
+    "build:copy": "node build-copy.js && cp -r shared dist/shared",
     "start": "cross-env NODE_ENV=production node --enable-source-maps dist/server/index.js",
     "check": "pnpm exec tsc -p server/tsconfig.json --noEmit",
     "clean": "pnpm exec rimraf dist && pnpm exec rimraf client/dist",

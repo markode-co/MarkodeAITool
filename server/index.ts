@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite.js";
 import cors from "cors";
 import "dotenv/config";
 import "module-alias/register.js";
-import authGoogleRouter from "./auth-google.js"; // ✅ استيراد مسار Google Auth
+import authGoogleRouter from "./auth-google.js"; 
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5050;
@@ -12,16 +12,18 @@ const PORT = Number(process.env.PORT) || 5050;
 // ✅ إعداد CORS
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://markode-ai-tool.onrender.com", 
+    ],
     credentials: true,
   })
 );
 
-// ✅ إعداد body parser
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// ✅ تسجيل الطلبات
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -53,13 +55,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // ✅ تسجيل مسارات Google OAuth قبل المسارات الأخرى
   app.use("/auth", authGoogleRouter);
 
-  // ✅ تسجيل باقي المسارات
   const server = await registerRoutes(app);
 
-  // ✅ معالجة الأخطاء
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -67,15 +66,13 @@ app.use((req, res, next) => {
     console.error("❌ Server Error:", err);
   });
 
-  // ✅ اختيار Vite أو الملفات الثابتة
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ✅ تشغيل الخادم
-  server.listen(PORT, "127.0.0.1", () => {
-    console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
-  });
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 })();

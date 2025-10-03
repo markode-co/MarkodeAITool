@@ -1,47 +1,25 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Landing from "@/pages/Landing";
-import Dashboard from "@/pages/Dashboard";
-import Templates from "@/pages/Templates";
-import Projects from "@/pages/Projects";
-import Pricing from "@/pages/Pricing";
-import Checkout from "@/pages/Checkout";
-import Login from "@/pages/Login";
-import About from "@/pages/About";
-import Contact from "@/pages/Contact";
-import HelpCenter from "@/pages/HelpCenter";
-import NotFound from "@/pages/not-found";
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App"; 
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import "./index.css";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <div className="flex flex-col min-h-screen">
-        {/* ✅ الهيدر في كل الصفحات */}
-        <Header />
-
-        {/* ✅ المسارات */}
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/login" element={<Login />} /> {/* ✅ تسجيل الدخول */}
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/help-center" element={<HelpCenter />} />
-            <Route path="*" element={<NotFound />} /> {/* صفحة الخطأ */}
-          </Routes>
-        </main>
-
-        {/* ✅ الفوتر في كل الصفحات */}
-        <Footer />
-      </div>
-    </BrowserRouter>
-  );
-}
-
-export default App;
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light">
+        <LanguageProvider defaultLanguage="ar">
+          <TooltipProvider>
+            <Toaster />
+            <App /> {/* ✅ التطبيق الرئيسي */}
+          </TooltipProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
+);

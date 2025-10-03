@@ -13,7 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "paths": {
-      "@shared/*": ["shared/*"]
+      "@shared/*": ["shared/*"],
+      "@/*": ["src/*"]
     }
   },
   "include": ["./**/*.ts"],

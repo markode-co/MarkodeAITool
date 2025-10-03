@@ -8,23 +8,25 @@ import {
   type InsertProject,
   type Template,
   type InsertTemplate,
-} from "@shared/schema.js";
+} from "../shared/schema.js";
 
 import { db } from "./db.js";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   // Project operations
   getUserProjects(userId: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, updates: Partial<InsertProject>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
-  
+
   // Template operations
   getTemplates(): Promise<Template[]>;
   getTemplate(id: string): Promise<Template | undefined>;
@@ -32,10 +34,29 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations
+  // ====== USER OPERATIONS ======
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  // ✅ احصل على مستخدم عن طريق البريد الإلكتروني
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  // ✅ أنشئ مستخدم جديد
+  async createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return newUser;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -53,7 +74,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Project operations
+  // ====== PROJECT OPERATIONS ======
   async getUserProjects(userId: string): Promise<Project[]> {
     return await db
       .select()
@@ -68,10 +89,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(project: InsertProject): Promise<Project> {
-    const [created] = await db
-      .insert(projects)
-      .values(project)
-      .returning();
+    const [created] = await db.insert(projects).values(project).returning();
     return created;
   }
 
@@ -88,7 +106,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(projects).where(eq(projects.id, id));
   }
 
-  // Template operations
+  // ====== TEMPLATE OPERATIONS ======
   async getTemplates(): Promise<Template[]> {
     return await db
       .select()
@@ -103,10 +121,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTemplate(template: InsertTemplate): Promise<Template> {
-    const [created] = await db
-      .insert(templates)
-      .values(template)
-      .returning();
+    const [created] = await db.insert(templates).values(template).returning();
     return created;
   }
 }

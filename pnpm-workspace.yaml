@@ -3,3 +3,6 @@ ignoredBuiltDependencies:
   - bufferutil
   - es5-ext
   - esbuild
+
+onlyBuiltDependencies:
+  - bcrypt

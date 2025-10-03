@@ -71,10 +71,12 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
-
+  
   app.get("*", (req, res) => {
     res.sendFile(path.join(process.cwd(), "dist", "index.html"));
   });
+  
+  app.use(express.json());
 
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);

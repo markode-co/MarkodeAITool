@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import {
   users,
   projects,
@@ -35,46 +36,79 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // ====== USER OPERATIONS ======
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  // ✅ احصل على مستخدم عن طريق البريد الإلكتروني
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
-  // ✅ أنشئ مستخدم جديد
   async createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        ...userData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    return newUser;
+    try {
+      // 🧩 تشفير كلمة المرور إن لم تكن مشفرة مسبقًا
+      let passwordToSave = userData.password;
+      if (!userData.password.startsWith("$2a$")) {
+        passwordToSave = await bcrypt.hash(userData.password, 10);
+      }
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          ...userData,
+          password: passwordToSave,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      console.log(`✅ User created: ${newUser.email}`);
+      return newUser;
+    } catch (error: any) {
+      console.error("❌ Error creating user:", error.message);
+      throw new Error("Failed to create user");
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    try {
+      const existing = await this.getUserByEmail(userData.email);
+
+      if (existing) {
+        // 🔁 تحديث المستخدم الحالي
+        const [updated] = await db
+          .update(users)
+          .set({
+            ...userData,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.email, userData.email))
+          .returning();
+
+        console.log(`🔄 User updated: ${updated.email}`);
+        return updated;
+      } else {
+       return await this.createUser({
+  email: userData.email,
+  password: userData.password || "",
+  firstName: userData.firstName || "User",
+  lastName: userData.lastName || "",
+  profileImageUrl: userData.profileImageUrl || "",
+});
+
+
+      }
+    } catch (error: any) {
+      console.error("❌ Error upserting user:", error.message);
+      throw new Error("Failed to upsert user");
+    }
   }
 
   // ====== PROJECT OPERATIONS ======
+
   async getUserProjects(userId: string): Promise<Project[]> {
     return await db
       .select()
@@ -107,6 +141,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ====== TEMPLATE OPERATIONS ======
+
   async getTemplates(): Promise<Template[]> {
     return await db
       .select()

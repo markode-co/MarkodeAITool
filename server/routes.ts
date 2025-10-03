@@ -1,3 +1,6 @@
+// ================================
+// 🌐 IMPORTS
+// ================================
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
@@ -7,9 +10,11 @@ import { createProjectFormSchema } from "../shared/schema.js";
 import { z } from "zod";
 import Stripe from "stripe";
 import bcrypt from "bcryptjs";
+import passport from "passport";
+import "./passport.js";
 
 // ================================
-// ⚙️ Stripe Initialization
+// 💳 STRIPE INITIALIZATION
 // ================================
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("❌ Missing required Stripe secret: STRIPE_SECRET_KEY");
@@ -25,50 +30,69 @@ const isPayPalAvailable =
   process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET;
 
 // ================================
-// 🚀 Register Routes Function
+// 🚀 REGISTER ROUTES FUNCTION
 // ================================
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ================================
+  // 🔑 GOOGLE AUTH CALLBACK
+  // ================================
+  app.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/login" }),
+    (req, res) => {
+      const user = req.user as any;
+
+      if (!user) {
+        return res.redirect("https://markode-ai-tool.onrender.com/login");
+      }
+
+      const token = generateToken({
+        id: user.id,
+        name: user.firstName,
+        email: user.email,
+        picture: user.profileImageUrl,
+      });
+
+      res.redirect(`https://markode-ai-tool.onrender.com/auth/callback?token=${token}`);
+    }
+  );
 
   // ================================
-  // 🧾 AUTH ROUTES (Signup / Login / User)
+  // 🧍 SIGNUP ROUTE
   // ================================
-
-  // ✅ Signup (register new user)
   app.post("/api/signup", async (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const { name, email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!name || !email || !password) {
+        return res.status(400).json({ message: "جميع الحقول مطلوبة" });
       }
 
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        return res.status(409).json({ message: "User already exists" });
+        return res.status(400).json({ message: "البريد الإلكتروني مستخدم مسبقًا" });
       }
-
-      const [firstName, ...lastNameParts] = (name || "").split(" ");
-      const lastName = lastNameParts.join(" ");
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await storage.createUser({
+      const newUser = await storage.createUser({
+        firstName: name,
+        lastName: "",
         email,
         password: hashedPassword,
-        firstName,
-        lastName,
         profileImageUrl: "",
       });
 
-      const token = generateToken(user.id);
-      res.json({ message: "User registered successfully", token, user });
+      res.json({ message: "تم إنشاء الحساب بنجاح", user: newUser });
     } catch (error) {
-      console.error("Error during signup:", error);
-      res.status(500).json({ message: "Failed to register user" });
+      console.error("❌ Signup error:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء التسجيل" });
     }
   });
 
-  // ✅ Login (returns JWT)
+  // ================================
+  // 🔐 LOGIN ROUTE
+  // ================================
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -87,7 +111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      const token = generateToken(user.id);
+      const token = generateToken({
+        id: user.id,
+        name: user.firstName,
+        email: user.email,
+        picture: user.profileImageUrl,
+      });
+
       res.json({ message: "Login successful", token, user });
     } catch (error) {
       console.error("Login error:", error);
@@ -95,7 +125,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ✅ Get user info (protected)
+  // ================================
+  // 🧾 GET AUTH USER
+  // ================================
   app.get("/api/auth/user", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const userId = req.user.sub;
@@ -111,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 🧩 PROJECT ROUTES
   // ================================
 
-  // ✅ Create new project
+  // ✅ CREATE PROJECT
   app.post("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const userId = req.user.sub;
@@ -125,7 +157,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🚀 Starting code generation for project ${project.id}...`);
 
-      // Generate code asynchronously
       generateProjectCode(
         validatedData.prompt,
         validatedData.framework,
@@ -146,24 +177,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res
-          .status(400)
-          .json({ message: "Invalid request data", errors: error.issues });
+        return res.status(400).json({ message: "Invalid request data", errors: error.issues });
       }
       console.error("Error creating project:", error);
       res.status(500).json({ message: "Failed to create project" });
     }
   });
 
-  // ✅ Update project
+  // ✅ UPDATE PROJECT
   app.put("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const project = await storage.getProject(id);
 
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub)
-        return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
 
       const updated = await storage.updateProject(id, { ...req.body, userId: req.user.sub });
       res.json(updated);
@@ -173,15 +201,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ✅ Delete project
+  // ✅ DELETE PROJECT
   app.delete("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const project = await storage.getProject(id);
 
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub)
-        return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
 
       await storage.deleteProject(id);
       res.json({ message: "Project deleted successfully" });
@@ -192,9 +219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // 🧱 TEMPLATE ROUTES
+  // 📦 TEMPLATE ROUTES
   // ================================
-
   app.get("/api/templates", async (req, res) => {
     try {
       const templates = await storage.getTemplates();
@@ -248,7 +274,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
   // ⚙️ CODE IMPROVEMENT
   // ================================
-
   app.post("/api/projects/:id/improve", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
@@ -256,8 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = await storage.getProject(id);
 
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub)
-        return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
 
       const improvedCode = await improveCode(code, improvements);
       res.json({ improvedCode });
@@ -301,9 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error creating payment intent:", error);
-      res
-        .status(500)
-        .json({ message: "Error creating payment intent: " + error.message });
+      res.status(500).json({ message: "Error creating payment intent: " + error.message });
     }
   });
 

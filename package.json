@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
-  "scripts": {
+"scripts": {
   "dev": "tsx watch server/index.ts",
+
+  "build": "pnpm run clean && pnpm exec tsc --build && pnpm run build:client && pnpm run build:copy",
+
   "build:server": "pnpm exec tsc -p server/tsconfig.json",
+  "build:shared": "pnpm exec tsc -p shared/tsconfig.json",
   "build:client": "cd client && pnpm install --no-frozen-lockfile && pnpm exec vite build",
   "build:copy": "node build-copy.js",
-  "build": "pnpm run clean && pnpm run build:server && pnpm run build:client && pnpm run build:copy",
+
   "start": "cross-env NODE_ENV=production node --enable-source-maps dist/server/index.js",
   "check": "pnpm exec tsc -p server/tsconfig.json --noEmit",
   "clean": "pnpm exec rimraf dist && pnpm exec rimraf client/dist",

@@ -101,12 +101,12 @@ app.post('/api/projects', async (req: any, res) => {
     const userId = req.user.sub;
     const validatedData = createProjectFormSchema.parse(req.body);
     
-    // إنشاء مشروع بالحالة "building"
     const project = await storage.createProject({
-      ...validatedData,
-      userId,
-      status: 'building',
-    });
+  ...(validatedData as { name: string; framework: string }),
+  userId,
+  status: "building",
+});
+
 
     console.log(`🚀 Starting code generation for project ${project.id}...`);
 

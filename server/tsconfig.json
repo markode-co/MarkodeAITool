@@ -1,31 +1,22 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
+    "outDir": "../dist/server",
+    "rootDir": ".", 
+    "baseUrl": "..",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "resolveJsonModule": true,
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-
-    "rootDir": "..",
-    "outDir": "../dist/server",
-    "baseUrl": "..",
+    "types": ["node"],
     "paths": {
       "@shared/*": ["shared/*"]
-    },
-
-    "types": ["node"]
+    }
   },
-  "include": [
-  "./**/*.ts",
-  "../shared/**/*.ts"
-],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "client"
-  ]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist", "client"],
+  "references": [{ "path": "../shared" }]
 }

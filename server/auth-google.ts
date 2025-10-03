@@ -61,7 +61,7 @@ router.get(
       { expiresIn: "7d" }
     );
 
-    res.redirect(`https://markode-ai-tool.onrender.com/dashboard?token=${token}`);
+    res.redirect(`https://markode-ai-tool.onrender.com/auth/callback?token=${token}`);
   }
 );
 

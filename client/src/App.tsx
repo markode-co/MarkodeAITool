@@ -13,6 +13,7 @@ import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import Signup from "@/pages/Signup"; 
+import LoginCallback from "@/pages/LoginCallback";
 
 function App() {
   console.log("🚀 App started");
@@ -35,7 +36,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
 
-            {/* صفحات عامة */}
+            <Route path="/auth/callback" element={<LoginCallback />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/help-center" element={<HelpCenter />} />

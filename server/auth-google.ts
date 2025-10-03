@@ -49,12 +49,21 @@ router.get(
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     const user = req.user as any;
-    const token = jwt.sign(user, process.env.JWT_SECRET || "jwtsecret", {
-      expiresIn: "1d",
-    });
 
-   res.redirect(`https://markode-ai-tool.onrender.com/dashboard?token=${token}`);
+    const token = jwt.sign(
+      {
+        sub: user.id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+      },
+      process.env.JWT_SECRET || "jwtsecret",
+      { expiresIn: "7d" }
+    );
+
+    res.redirect(`https://markode-ai-tool.onrender.com/dashboard?token=${token}`);
   }
 );
+
 
 export default router;

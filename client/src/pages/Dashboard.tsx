@@ -18,6 +18,7 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { apiRequest } from "@/lib/queryClient";
 import type { Project, CreateProjectForm } from "@shared/schema";
 import { createProjectFormSchema } from "@shared/schema";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { t, isRTL } = useLanguage();
@@ -327,6 +328,8 @@ export default function Dashboard() {
           </DialogContent>
         </Dialog>
       </div>
+
+
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">

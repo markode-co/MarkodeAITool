@@ -12,7 +12,7 @@ import HelpCenter from "@/pages/HelpCenter";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import Signup from "@/pages/Signup"; // ✅ استخدم نفس طريقة الاستيراد الموحدة
+import Signup from "@/pages/Signup"; 
 
 function App() {
   console.log("🚀 App started");

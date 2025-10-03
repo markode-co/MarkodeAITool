@@ -1,31 +1,13 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+/// <reference types="vite/client" />
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-      "@shared": path.resolve(__dirname, "../shared"),
-    },
-  },
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_API_URL?: string;
+  }
 
-  base: "/",
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
 
-  build: {
-    outDir: "../dist/public",
-    emptyOutDir: true,
-  }, 
-
-  server: {
-    port: 5173,
-    proxy: {
-      "/api": {
-        target: "https://markode-ai-tool.onrender.com/",
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-});
+export {};

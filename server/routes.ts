@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { authMiddleware, generateToken, AuthRequest } from "./auth.js";
 import { generateProjectCode, improveCode } from "./openai.js";
-import { createProjectFormSchema } from "../shared/schema.js";
+import { createProjectFormSchema } from "@shared/schema.js";
 import { z } from "zod";
 import Stripe from "stripe";
 // PayPal imports - conditional handling done in routes

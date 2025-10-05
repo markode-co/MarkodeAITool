@@ -76,15 +76,21 @@ export class DatabaseStorage implements IStorage {
   try {
     const existing = await this.getUserByEmail(userData.email);
 
+    let passwordToSave = userData.password || "";
+    if (passwordToSave && !passwordToSave.startsWith("$2a$")) {
+      passwordToSave = await bcrypt.hash(passwordToSave, 10);
+    }
+
     if (existing) {
       const [updated] = await db
         .update(users)
         .set({
-          ...userData,
-          updatedAt: new Date(),
+          email: userData.email,
+          password: passwordToSave || existing.password,
           firstName: userData.firstName || existing.firstName,
           lastName: userData.lastName || existing.lastName,
           profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
+          updatedAt: new Date(),
         })
         .where(eq(users.email, userData.email))
         .returning();
@@ -94,7 +100,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       return await this.createUser({
         email: userData.email,
-        password: userData.password || "",
+        password: passwordToSave,
         firstName: userData.firstName || "User",
         lastName: userData.lastName || "",
         profileImageUrl: userData.profileImageUrl || "",
@@ -104,7 +110,8 @@ export class DatabaseStorage implements IStorage {
     console.error("❌ Error upserting user:", error);
     throw new Error("Failed to upsert user");
   }
-} 
+}
+
 
 
   // ====== PROJECT OPERATIONS ======

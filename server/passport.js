@@ -16,7 +16,7 @@ passport.use(
       callbackURL:
         process.env.API_URL
           ? `${process.env.API_URL}/auth/google/callback`
-          : "http://localhost:5050/auth/google/callback",
+          : "https://markode-ai-tool.onrender.com/auth/google/callback",
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {

@@ -73,38 +73,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    try {
-      const existing = await this.getUserByEmail(userData.email);
+  try {
+    const existing = await this.getUserByEmail(userData.email);
 
-      if (existing) {
-        const [updated] = await db
-          .update(users)
-          .set({
-            ...userData,
-            updatedAt: new Date(),
-            firstName: userData.firstName || existing.firstName,
-            lastName: userData.lastName || existing.lastName,
-            profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
-          })
-          .where(eq(users.email, userData.email))
-          .returning();
+    if (existing) {
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...userData,
+          updatedAt: new Date(),
+          firstName: userData.firstName || existing.firstName,
+          lastName: userData.lastName || existing.lastName,
+          profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
+        })
+        .where(eq(users.email, userData.email))
+        .returning();
 
-        console.log(`🔄 User updated: ${updated.email}`);
-        return updated;
-      } else {
-        return await this.createUser({
-          email: userData.email,
-          password: userData.password || "",
-          firstName: userData.firstName || "User",
-          lastName: userData.lastName || "",
-          profileImageUrl: userData.profileImageUrl || "",
-        });
-      }
-    } catch (error: any) {
-      console.error("❌ Error upserting user:", error.message);
-      throw new Error("Failed to upsert user");
+      console.log(`🔄 User updated: ${updated.email}`);
+      return updated;
+    } else {
+      return await this.createUser({
+        email: userData.email,
+        password: userData.password || "",
+        firstName: userData.firstName || "User",
+        lastName: userData.lastName || "",
+        profileImageUrl: userData.profileImageUrl || "",
+      });
     }
+  } catch (error: any) {
+    console.error("❌ Error upserting user:", error);
+    throw new Error("Failed to upsert user");
   }
+} 
+
 
   // ====== PROJECT OPERATIONS ======
   async getUserProjects(userId: string): Promise<Project[]> {

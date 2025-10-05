@@ -8,10 +8,16 @@ import { z } from "zod";
 import Stripe from "stripe";
 import bcrypt from "bcryptjs";
 import passport from "passport";
-import "./passport.js";
 import authGoogleRoutes from "./auth-google.js";
 import { PRICING_PLANS, createPaymentIntentSchema, type PlanId } from "./pricing.js";
 import { improveCode } from "./openai.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import(path.join(__dirname, "passport.js"));
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================

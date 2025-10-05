@@ -1,4 +1,5 @@
-declare module "./passport.js" {
-  import passport from "passport";
-  export default passport;
-}
+// server/passport.d.ts
+import type passportType from "passport";
+
+declare const passport: typeof passportType;
+export default passport;

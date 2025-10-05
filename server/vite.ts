@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * ✅ دالة تسجيل الأحداث في السيرفر
+ * ✅ تسجيل الأحداث في السيرفر
  */
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -41,12 +41,10 @@ export async function setupVite(app: Express, server: Server) {
 
   app.use(vite.middlewares);
 
-  // ✅ توجيه جميع المسارات إلى React أثناء التطوير
-  app.use("*", async (req, res, next) => {
+  app.use("*", async (req: Request, res: Response, next: NextFunction) => {
     try {
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
 
-      // منع الكاش بإضافة معرف فريد
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -65,60 +63,38 @@ export async function setupVite(app: Express, server: Server) {
  * ✅ تقديم الملفات الثابتة أثناء الإنتاج
  */
 export function serveStatic(app: Express) {
-  // 📁 مجلد البناء النهائي
   const distPath = path.resolve(__dirname, "../server/public");
   const indexPath = path.join(distPath, "index.html");
-
-  console.log("📦 Serving static files from:", distPath);
 
   if (!fs.existsSync(indexPath)) {
     console.error("❌ index.html not found in:", distPath);
     throw new Error("❌ لم يتم العثور على index.html داخل مجلد البناء!");
   }
 
-  // ✅ تقديم الملفات الثابتة
   app.use(express.static(distPath));
 
-  /**
-   * ✅ المسارات التي يجب أن تعيد index.html (ليتعامل معها React Router)
-   */
   const reactRoutes = [
-    "/",                 // الصفحة الرئيسية
-    "/landing",          // صفحة الهبوط
-    "/login",            // تسجيل الدخول
-    "/signup",           // إنشاء حساب
-    "/about",            // من نحن
-    "/dashboard",        // لوحة التحكم
-    "/profile",          // الملف الشخصي
-    "/settings",         // الإعدادات
-    "/contact",          // اتصل بنا
-    "/pricing",          // الأسعار
-    "/features",         // المميزات
+    "/", "/landing", "/login", "/signup", "/about", "/dashboard",
+    "/profile", "/settings", "/contact", "/pricing", "/features"
   ];
 
   reactRoutes.forEach((route) => {
-    app.get(route, (_req, res) => {
+    app.get(route, (_req: Request, res: Response) => {
       res.sendFile(indexPath);
     });
   });
 
-  /**
-   * ✅ معالجة مسارات Google Auth بشكل خاص
-   */
-  app.get("/auth/google", (_req, res) => {
-    // هذه المسارات تُدار من السيرفر (وليس React)
-    res.redirect("http://127.0.0.1:5000/api/auth/google");
+  // ✅ إعادة التوجيه لمصادقة Google عبر السيرفر
+  app.get("/auth/google", (_req: Request, res: Response) => {
+    res.redirect("/auth/google"); // سيُعالَج بواسطة Passport في routes.ts
   });
 
-  app.get("/auth/google/callback", (_req, res) => {
-    // بعد نجاح تسجيل الدخول يعاد التوجيه إلى لوحة التحكم
+  app.get("/auth/google/callback", (_req: Request, res: Response) => {
     res.redirect("/dashboard");
   });
 
-  /**
-   * ✅ أي مسار آخر غير موجود يعاد إلى React Router
-   */
-  app.get("*", (_req, res) => {
+  // ✅ أي مسار آخر يعاد إلى React
+  app.get("*", (_req: Request, res: Response) => {
     res.sendFile(indexPath);
   });
 }

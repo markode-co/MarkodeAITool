@@ -1,19 +1,34 @@
+// src/App.tsx
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Landing from "@/pages/Landing";
-import Dashboard from "@/pages/Dashboard";
-import Templates from "@/pages/Templates";
-import Projects from "@/pages/Projects";
-import Pricing from "@/pages/Pricing";
-import Checkout from "@/pages/Checkout";
-import Login from "@/pages/Login";
-import About from "@/pages/About";
-import Contact from "@/pages/Contact";
-import HelpCenter from "@/pages/HelpCenter";
-import NotFound from "@/pages/not-found";
-import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import Signup from "@/pages/Signup"; 
-import LoginCallback from "@/pages/LoginCallback";
+import Footer from "@/components/Footer";
+
+// ================================
+// Lazy-loaded pages
+// ================================
+const Landing = lazy(() => import("@/pages/Landing"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Templates = lazy(() => import("@/pages/Templates"));
+const Projects = lazy(() => import("@/pages/Projects"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
+const Login = lazy(() => import("@/pages/Login"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const LoginCallback = lazy(() => import("@/pages/LoginCallback"));
+const About = lazy(() => import("@/pages/About"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const HelpCenter = lazy(() => import("@/pages/HelpCenter"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+// ================================
+// Fallback UI أثناء التحميل
+// ================================
+const Loading = () => (
+  <div className="flex justify-center items-center h-full p-4">
+    <span className="text-gray-500">⏳ Loading...</span>
+  </div>
+);
 
 function App() {
   console.log("🚀 App started");
@@ -24,26 +39,29 @@ function App() {
         <Header />
 
         <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/checkout" element={<Checkout />} />
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/checkout" element={<Checkout />} />
 
-            {/* ✅ صفحات التسجيل والدخول */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+              {/* صفحات التسجيل والدخول */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/auth/callback" element={<LoginCallback />} />
 
-            <Route path="/auth/callback" element={<LoginCallback />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/help-center" element={<HelpCenter />} />
+              {/* صفحات معلومات */}
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/help-center" element={<HelpCenter />} />
 
-            {/* صفحة الخطأ */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* صفحة الخطأ */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </main>
 
         <Footer />

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Template } from "@shared/schema";
 import {
   Search, 
-  Filter,
   Code2,
   ExternalLink,
   Star,
@@ -49,11 +48,26 @@ export default function Templates() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+
+  // ✅ البحث والفئة
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  // ✅ قالب محدد وإنشاء مشروع منه
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
+  // ✅ تأخير البحث (Debounce)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300); // تأخير 300ms مثل Wix وFramer
+
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // ✅ نموذج إنشاء مشروع
   const form = useForm<CreateFromTemplate>({
     resolver: zodResolver(createFromTemplateSchema),
     defaultValues: {
@@ -62,11 +76,13 @@ export default function Templates() {
     },
   });
 
+  // ✅ جلب القوالب
   const { data: templates = [], isLoading } = useQuery<Template[]>({
     queryKey: ["/api/templates"],
     retry: false,
   });
 
+  // ✅ إنشاء مشروع من قالب
   const createFromTemplateMutation = useMutation({
     mutationFn: async ({ templateId, data }: { templateId: string; data: CreateFromTemplate }) => {
       const response = await apiRequest("POST", `/api/projects/from-template/${templateId}`, data);
@@ -77,20 +93,21 @@ export default function Templates() {
       setIsCreateDialogOpen(false);
       form.reset();
       toast({
-        title: "تم إنشاء المشروع بنجاح",
-        description: "تم إنشاء مشروعك من القالب",
+        title: "تم إنشاء المشروع بنجاح 🎉",
+        description: "تم إنشاء مشروعك من القالب.",
       });
       setLocation(`/editor/${project.id}`);
     },
     onError: (error) => {
       toast({
-        title: "خطأ في إنشاء المشروع",
+        title: "حدث خطأ أثناء إنشاء المشروع",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
+  // ✅ الفئات
   const categories = [
     { id: "all", label: "جميع الفئات", icon: Globe },
     { id: "ecommerce", label: "متاجر إلكترونية", icon: ShoppingCart },
@@ -104,18 +121,24 @@ export default function Templates() {
     { id: "music", label: "موسيقى", icon: Music },
   ];
 
-  const filteredTemplates = templates.filter((template) => {
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || template.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  // ✅ تصفية القوالب باستخدام useMemo + Debounce
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((template) => {
+      const matchesSearch =
+        template.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        template.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchesCategory =
+        categoryFilter === "all" || template.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [templates, debouncedSearch, categoryFilter]);
 
+  // ✅ اختيار القالب واستخدامه
   const handleUseTemplate = (template: Template) => {
     if (!isAuthenticated) {
       toast({
         title: "تسجيل الدخول مطلوب",
-        description: "يجب تسجيل الدخول لاستخدام القوالب",
+        description: "يرجى تسجيل الدخول لاستخدام القوالب.",
       });
       window.location.href = "/api/login";
       return;
@@ -127,6 +150,7 @@ export default function Templates() {
     setIsCreateDialogOpen(true);
   };
 
+  // ✅ إرسال النموذج
   const onSubmit = (data: CreateFromTemplate) => {
     if (selectedTemplate) {
       createFromTemplateMutation.mutate({
@@ -136,6 +160,7 @@ export default function Templates() {
     }
   };
 
+  // ✅ ألوان الأُطر
   const getFrameworkColor = (framework: string) => {
     const colors: Record<string, string> = {
       react: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
@@ -153,22 +178,16 @@ export default function Templates() {
     <div className="container mx-auto px-4 py-8" data-testid="templates-page">
       {/* Header */}
       <div className="text-center mb-12">
-        <div className="mb-6">
-          <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold mb-4" data-testid="templates-title">
-            🎨 {t("templates.title")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto" data-testid="templates-subtitle">
-            {t("templates.subtitle")}
-          </p>
+        <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
+          <Sparkles className="w-8 h-8 text-white" />
         </div>
+        <h1 className="text-4xl font-bold mb-2">🎨 {t("templates.title")}</h1>
+        <p className="text-muted-foreground text-lg">{t("templates.subtitle")}</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col lg:flex-row gap-6 mb-8">
-        {/* Search */}
+        {/* 🔍 Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -176,12 +195,11 @@ export default function Templates() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
-            data-testid="input-search-templates"
           />
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-2">
+        {/* 🧩 Categories */}
+        <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
           {categories.map((category) => {
             const CategoryIcon = category.icon;
             return (
@@ -191,7 +209,6 @@ export default function Templates() {
                 size="sm"
                 onClick={() => setCategoryFilter(category.id)}
                 className="flex items-center gap-2"
-                data-testid={`filter-${category.id}`}
               >
                 <CategoryIcon className="w-4 h-4" />
                 {category.label}
@@ -204,7 +221,7 @@ export default function Templates() {
       {/* Templates Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(12)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <div className="h-48 bg-muted rounded-t-lg"></div>
               <CardContent className="p-6">
@@ -216,7 +233,7 @@ export default function Templates() {
           ))}
         </div>
       ) : filteredTemplates.length === 0 ? (
-        <Card className="text-center py-12" data-testid="empty-templates">
+        <Card className="text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-muted-foreground" />
@@ -228,8 +245,7 @@ export default function Templates() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredTemplates.map((template) => (
-            <Card key={template.id} className="feature-card group overflow-hidden" data-testid={`template-card-${template.id}`}>
-              {/* Template Preview Image */}
+            <Card key={template.id} className="feature-card group overflow-hidden hover:shadow-lg transition">
               <div className="relative h-48 bg-gradient-to-br from-primary/10 to-accent/10 overflow-hidden">
                 {template.imageUrl ? (
                   <img
@@ -250,14 +266,10 @@ export default function Templates() {
               </div>
 
               <CardContent className="p-6">
-                <div className="mb-4">
-                  <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors" data-testid="template-name">
-                    {template.name}
-                  </h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2" data-testid="template-description">
-                    {template.description}
-                  </p>
-                </div>
+                <h3 className="font-semibold text-lg mb-1">{template.name}</h3>
+                <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+                  {template.description}
+                </p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <Badge variant="outline" className="text-xs">
@@ -269,26 +281,19 @@ export default function Templates() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleUseTemplate(template)}
-                    className="flex-1"
-                    data-testid={`button-use-${template.id}`}
-                  >
+                  <Button size="sm" onClick={() => handleUseTemplate(template)} className="flex-1">
                     <Play className="w-4 h-4 mr-2" />
                     {t("template.use")}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      // Template preview functionality would go here
+                    onClick={() =>
                       toast({
-                        title: "المعاينة قريباً",
-                        description: "سيتم إضافة خاصية معاينة القوالب قريباً",
-                      });
-                    }}
-                    data-testid={`button-preview-${template.id}`}
+                        title: "قريباً 🚧",
+                        description: "سيتم إضافة خاصية المعاينة قريباً",
+                      })
+                    }
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
@@ -299,59 +304,13 @@ export default function Templates() {
         </div>
       )}
 
-      {/* Popular Templates Section */}
-      {!searchTerm && categoryFilter === "all" && templates.length > 0 && (
-        <div className="mt-16">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">🔥 القوالب الأكثر شعبية</h2>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Star className="w-3 h-3 fill-current" />
-              مميز
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.slice(0, 3).map((template) => (
-              <Card key={`popular-${template.id}`} className="feature-card border-primary/20" data-testid={`popular-template-${template.id}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <Badge className={getFrameworkColor(template.framework)}>
-                      {template.framework}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-yellow-500">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="text-sm font-medium">4.8</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="font-semibold mb-2">{template.name}</h3>
-                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                    {template.description}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => handleUseTemplate(template)}
-                    className="w-full"
-                    data-testid={`button-use-popular-${template.id}`}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    استخدم هذا القالب
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Create Project Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>إنشاء مشروع من القالب</DialogTitle>
           </DialogHeader>
-          
+
           {selectedTemplate && (
             <div className="mb-4 p-3 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
@@ -373,7 +332,7 @@ export default function Templates() {
                   <FormItem>
                     <FormLabel>{t("form.project.name")}</FormLabel>
                     <FormControl>
-                      <Input {...field} data-testid="input-template-project-name" />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -387,7 +346,7 @@ export default function Templates() {
                   <FormItem>
                     <FormLabel>{t("form.project.description")} (اختياري)</FormLabel>
                     <FormControl>
-                      <Input {...field} data-testid="input-template-project-description" />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -395,18 +354,12 @@ export default function Templates() {
               />
 
               <div className="flex gap-2 justify-end pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                  data-testid="button-cancel-template"
-                >
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   {t("button.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   disabled={createFromTemplateMutation.isPending}
-                  data-testid="button-create-from-template"
                 >
                   {createFromTemplateMutation.isPending ? t("button.loading") : t("button.create")}
                 </Button>

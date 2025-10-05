@@ -5,10 +5,7 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,6 +13,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // منع الضغط المتكرر
     setLoading(true);
 
     try {
@@ -28,10 +26,13 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "فشل تسجيل الدخول");
 
+      // حفظ التوكن في localStorage أو يمكنك استخدام context/global state
       localStorage.setItem("token", data.token);
+
       alert("✅ تم تسجيل الدخول بنجاح!");
-      navigate("/");
+      navigate("/"); // إعادة التوجيه للصفحة الرئيسية
     } catch (err: any) {
+      console.error("Login error:", err);
       alert(err.message || "حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setLoading(false);
@@ -48,7 +49,6 @@ export default function Login() {
         <h2 className="text-3xl font-bold text-center mb-2 text-gray-800">
           تسجيل الدخول
         </h2>
-
         <p className="text-center text-gray-500 mb-6">
           قم بتسجيل الدخول باستخدام Google أو البريد الإلكتروني
         </p>

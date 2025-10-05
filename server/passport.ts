@@ -29,7 +29,6 @@ passport.use(
         const email = profile.emails?.[0]?.value;
         if (!email) return done(new Error("لم يتم العثور على بريد إلكتروني في حساب Google"), false);
 
-        // upsertUser يرجع DBUser
         const dbUser: DBUser = await storage.upsertUser({
           email,
           firstName: profile.name?.givenName || "User",
@@ -38,7 +37,6 @@ passport.use(
           profileImageUrl: profile.photos?.[0]?.value || "",
         });
 
-        // تحويل DBUser إلى SessionUser
         const user: SessionUser = {
           id: dbUser.id,
           email: dbUser.email,
@@ -57,9 +55,9 @@ passport.use(
 );
 
 // ===== Passport Sessions =====
-// تجاوز النوع بـ any لتجنب تعارض TypeScript
+// استخدام any لتجاوز تعارض TypeScript
 passport.serializeUser((user: any, done) => {
-  done(null, user.id); // نخزن فقط الـ id في الجلسة
+  done(null, user.id); // نخزن فقط id في الجلسة
 });
 
 passport.deserializeUser(async (id: any, done) => {

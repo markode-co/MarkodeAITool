@@ -255,39 +255,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // CODE IMPROVEMENT
+  // CODE IMPROVEMENT (محسن)
   // ================================
   app.post("/api/projects/:id/improve", authMiddleware, async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthRequest;
       const { id } = req.params;
       const { code, improvements } = req.body;
-      const userId = authReq.user!.sub;
+
+      if (!code || typeof code !== "string")
+        return res.status(400).json({ message: "Code is required and must be a string" });
 
       const project = await storage.getProject(id);
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== userId) return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== authReq.user!.sub) return res.status(403).json({ message: "Access denied" });
 
-      const improvedCode = await improveCode(code, improvements);
+      const improvedCode = await improveCode(code, improvements || "");
       res.json({ improvedCode });
     } catch (error) {
-      console.error(error);
+      console.error("Improve code error:", error);
       res.status(500).json({ message: "Failed to improve code" });
     }
   });
 
   // ================================
-  // STRIPE PAYMENTS
+  // STRIPE PAYMENTS (محسن)
   // ================================
   app.post("/api/create-payment-intent", authMiddleware, async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthRequest;
-      const { planId } = createPaymentIntentSchema.parse(req.body) as { planId: PlanId };
+      const parsedBody = createPaymentIntentSchema.safeParse(req.body);
+      if (!parsedBody.success) {
+        return res.status(400).json({ message: "Invalid request data", errors: parsedBody.error.issues });
+      }
+
+      const { planId } = parsedBody.data as { planId: PlanId };
       const userId = authReq.user!.sub;
 
       const plan = PRICING_PLANS[planId];
+      if (!plan) return res.status(404).json({ message: "Plan not found" });
+
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: plan.price,
+        amount: Math.round(plan.price), // بالوحدة الصحيحة
         currency: plan.currency,
         automatic_payment_methods: { enabled: true },
         metadata: { planId, planName: plan.name, userId },
@@ -295,30 +304,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
     } catch (error: any) {
-      console.error(error);
-      res.status(500).json({ message: error.message });
+      console.error("Stripe PaymentIntent error:", error);
+      res.status(500).json({ message: error.message || "Failed to create payment intent" });
     }
   });
 
   // ================================
-  // PAYPAL ROUTES
+  // PAYPAL ROUTES (محسنة)
   // ================================
   app.get("/api/paypal/setup", async (req, res) => {
     if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
-    const { loadPaypalDefault } = await import("./paypal.js");
-    await loadPaypalDefault(req, res);
+    try {
+      const { loadPaypalDefault } = await import("./paypal.js");
+      await loadPaypalDefault(req, res);
+    } catch (error) {
+      console.error("PayPal setup error:", error);
+      res.status(500).json({ error: "Failed to setup PayPal" });
+    }
   });
 
   app.post("/api/paypal/order", async (req, res) => {
     if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
-    const { createPaypalOrder } = await import("./paypal.js");
-    await createPaypalOrder(req, res);
+    try {
+      const { createPaypalOrder } = await import("./paypal.js");
+      await createPaypalOrder(req, res);
+    } catch (error) {
+      console.error("PayPal create order error:", error);
+      res.status(500).json({ error: "Failed to create PayPal order" });
+    }
   });
 
   app.post("/api/paypal/order/:orderID/capture", async (req, res) => {
     if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
-    const { capturePaypalOrder } = await import("./paypal.js");
-    await capturePaypalOrder(req, res);
+    try {
+      const { capturePaypalOrder } = await import("./paypal.js");
+      await capturePaypalOrder(req, res);
+    } catch (error) {
+      console.error("PayPal capture order error:", error);
+      res.status(500).json({ error: "Failed to capture PayPal order" });
+    }
   });
 
   const server = createServer(app);

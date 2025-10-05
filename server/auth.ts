@@ -1,21 +1,25 @@
 // server/auth.ts
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { storage } from "./storage.js"; // ⚡ .js لتوافق ESM
+import { storage } from "./storage.js"; // ⚡ ESM import
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
 
+// ================================
 // نوع الطلب بعد فك التوكن
+// ================================
 export interface AuthRequest extends Request {
   user?: {
     sub: string;         // معرف المستخدم إلزامي
-    name?: string;       // اسم المستخدم اختياري
+    name?: string;       // الاسم اختياري
     email?: string;      // البريد اختياري
-    picture?: string;    // صورة اختياري
+    picture?: string;    // صورة الملف الشخصي اختياري
   };
 }
 
+// ================================
 // توليد JWT
+// ================================
 export function generateToken(user: {
   id: string;
   name?: string | null;
@@ -29,10 +33,12 @@ export function generateToken(user: {
     picture: user.picture ?? undefined,
   };
 
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" }); // صالحة لمدة 7 أيام
 }
 
-// Middleware للتحقق من التوكن
+// ================================
+// Middleware للتحقق من JWT
+// ================================
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -58,7 +64,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const userFromDb = await storage.getUser(decoded.sub);
     if (!userFromDb) return res.status(401).json({ message: "User not found" });
 
-    // ⚡ تحويل خصائص قاعدة البيانات لتوافق AuthRequest
+    // ⚡ تحويل بيانات قاعدة البيانات لتوافق AuthRequest
     (req as AuthRequest).user = {
       sub: userFromDb.id,
       name: userFromDb.firstName ?? undefined,

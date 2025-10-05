@@ -11,13 +11,19 @@ export interface GeneratedCode {
   deploymentInstructions: string;
 }
 
+/**
+ * توليد مشروع كامل بناءً على وصف المستخدم
+ */
 export async function generateProjectCode(
   prompt: string, 
   framework?: string,
   language?: string
 ): Promise<GeneratedCode> {
+  if (!prompt || prompt.trim().length === 0) {
+    throw new Error("Prompt cannot be empty");
+  }
+
   try {
-    // Use the latest available OpenAI model
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -28,119 +34,106 @@ export async function generateProjectCode(
 Generate a complete project structure with all necessary files based on the user's description. 
 
 Requirements:
-- Create a fully functional application
-- Include package.json, configuration files, and all source code
-- Use modern best practices and clean code
-- Include proper error handling and validation
-- Generate responsive, accessible UI components
-- Support both Arabic and English if mentioned
-- Use TypeScript when possible
+- Fully functional application
+- Include package.json, configuration files, and source code
+- Modern best practices, clean code
+- Error handling and validation
+- Responsive, accessible UI components
+- Support Arabic and English if mentioned
+- Use TypeScript if possible
 - Include deployment instructions
 
-Respond with JSON in this exact format:
+Respond in JSON format exactly as:
 {
-  "files": {
-    "package.json": "file content here",
-    "src/index.js": "file content here",
-    "src/components/App.js": "file content here",
-    // ... all necessary files
-  },
+  "files": { "file/path": "content" },
   "framework": "react|vue|angular|vanilla|nodejs|python|php",
   "language": "javascript|typescript|python|php",
-  "deploymentInstructions": "Step-by-step deployment instructions"
+  "deploymentInstructions": "step-by-step instructions"
 }`
         },
         {
           role: "user",
           content: `Generate a complete project for: ${prompt}
-
 ${framework ? `Preferred framework: ${framework}` : ''}
 ${language ? `Preferred language: ${language}` : ''}
 
-Create all necessary files including configuration, source code, and styling.`
+Include all necessary files, configuration, source code, and styling.`
         }
       ],
       response_format: { type: "json_object" },
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{}');
-    
+    // ⚡ تأكد من وجود محتوى
+    const resultRaw = response.choices?.[0]?.message?.content;
+    if (!resultRaw) throw new Error("No response from OpenAI");
+
+    const result = typeof resultRaw === "string" ? JSON.parse(resultRaw) : resultRaw;
+
     return {
       files: result.files || {},
-      framework: result.framework || 'react',
-      language: result.language || 'javascript',
-      deploymentInstructions: result.deploymentInstructions || 'No deployment instructions provided'
+      framework: result.framework || "react",
+      language: result.language || "javascript",
+      deploymentInstructions: result.deploymentInstructions || "No deployment instructions provided",
     };
   } catch (error) {
-    console.error('Error generating project code:', error);
-    throw new Error('Failed to generate project code');
+    console.error("Error generating project code:", error);
+    throw new Error("Failed to generate project code");
   }
 }
 
+/**
+ * تنظيف الكود من fences أو markdown
+ */
 function sanitizeCodeOutput(rawOutput: string): string {
-  if (!rawOutput || typeof rawOutput !== 'string') {
-    throw new Error('Invalid code output received');
+  if (!rawOutput || typeof rawOutput !== "string") {
+    throw new Error("Invalid code output received");
   }
 
   let cleaned = rawOutput.trim();
-  
-  // Remove all lines that are markdown code fences (``` or ~~~ with any language/spaces)
-  cleaned = cleaned.replace(/^```.*$/gm, '');  // Remove all ``` fence lines
-  cleaned = cleaned.replace(/^~~~.*$/gm, '');  // Remove all ~~~ fence lines
-  
-  // Remove any leading/trailing whitespace again
-  cleaned = cleaned.trim();
-  
-  if (!cleaned) {
-    throw new Error('Empty code output after sanitization');
-  }
-  
+  cleaned = cleaned.replace(/^```.*$/gm, "").replace(/^~~~.*$/gm, "").trim();
+
+  if (!cleaned) throw new Error("Empty code output after sanitization");
+
   return cleaned;
 }
 
+/**
+ * تحسين كود موجود بناءً على تعليمات محددة
+ */
 export async function improveCode(
   code: string,
   improvements: string
 ): Promise<string> {
-  try {
-    // Validate inputs
-    if (!code || typeof code !== 'string' || code.trim().length === 0) {
-      throw new Error('Invalid code input');
-    }
-    
-    if (!improvements || typeof improvements !== 'string' || improvements.trim().length === 0) {
-      throw new Error('Invalid improvements input');
-    }
+  if (!code?.trim()) throw new Error("Invalid code input");
+  if (!improvements?.trim()) throw new Error("Invalid improvements input");
 
-    // Use the latest available OpenAI model
+  try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an expert developer who improves and optimizes code based on specific requirements. Return ONLY the improved code without any explanations, markdown formatting, or code fences. Do not include ``` or language tags."
+          content: "You are an expert developer who improves code. Return ONLY the improved code without explanations, markdown, or code fences."
         },
         {
           role: "user",
-          content: `Improve this code based on the following requirements:
+          content: `Improve this code according to:
 ${improvements.trim()}
 
 Original code:
 ${code}
 
-Return only the clean improved code without any markdown formatting:`
+Return ONLY the clean improved code:`
         }
       ],
     });
 
-    const rawOutput = response.choices[0].message.content;
-    if (!rawOutput) {
-      throw new Error('No response received from OpenAI');
-    }
+    const rawOutput = response.choices?.[0]?.message?.content;
+    if (!rawOutput) throw new Error("No response received from OpenAI");
 
     return sanitizeCodeOutput(rawOutput);
   } catch (error) {
-    console.error('Error improving code:', error);
-    throw new Error('Failed to improve code');
+    console.error("Error improving code:", error);
+    throw new Error("Failed to improve code");
   }
 }

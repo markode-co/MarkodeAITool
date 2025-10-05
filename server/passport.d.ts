@@ -1,5 +1,6 @@
 // server/passport.d.ts
-import type passportType from "passport";
+import type passport from "passport";
 
-declare const passport: typeof passportType;
-export default passport;
+// إعادة تصدير passport مع النوع الصحيح
+declare const _passport: typeof passport;
+export default _passport;

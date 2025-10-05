@@ -11,15 +11,17 @@ export const PRICING_PLANS = {
 } as const;
 
 // ================================
-// Schema للتحقق من المدفوعات
-// ================================
-export const createPaymentIntentSchema = z.object({
-  planId: z.string().refine((id) => Object.keys(PRICING_PLANS).includes(id), {
-    message: "Invalid planId",
-  }),
-});
-
-// ================================
 // نوع معرف الخطة
 // ================================
 export type PlanId = keyof typeof PRICING_PLANS;
+
+// ================================
+// Schema للتحقق من المدفوعات
+// ================================
+export const createPaymentIntentSchema = z.object({
+  planId: z
+    .string()
+    .refine((id) => Object.keys(PRICING_PLANS).includes(id), {
+      message: "Invalid planId",
+    }),
+});

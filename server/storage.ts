@@ -11,7 +11,6 @@ import {
   type Template,
   type InsertTemplate,
 } from "../shared/schema.js";
-
 import { db } from "./db.js";
 import { eq, desc } from "drizzle-orm";
 
@@ -33,7 +32,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // ====== USER OPERATIONS ======
+  // ===== USER OPERATIONS =====
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -46,16 +45,16 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
     try {
-      let passwordToSave = userData.password || "";
-      if (!passwordToSave.startsWith("$2a$") && passwordToSave !== "") {
-        passwordToSave = await bcrypt.hash(passwordToSave, 10);
+      let password = userData.password || "";
+      if (password && !password.startsWith("$2a$")) {
+        password = await bcrypt.hash(password, 10);
       }
 
       const [newUser] = await db
         .insert(users)
         .values({
           ...userData,
-          password: passwordToSave,
+          password,
           firstName: userData.firstName || "User",
           lastName: userData.lastName || "",
           profileImageUrl: userData.profileImageUrl || "",
@@ -73,48 +72,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-  try {
-    const existing = await this.getUserByEmail(userData.email);
+    try {
+      const existing = await this.getUserByEmail(userData.email);
 
-    let passwordToSave = userData.password || "";
-    if (passwordToSave && !passwordToSave.startsWith("$2a$")) {
-      passwordToSave = await bcrypt.hash(passwordToSave, 10);
-    }
+      let password = userData.password || "";
+      if (password && !password.startsWith("$2a$")) {
+        password = await bcrypt.hash(password, 10);
+      }
 
-    if (existing) {
-      const [updated] = await db
-        .update(users)
-        .set({
+      if (existing) {
+        const [updated] = await db
+          .update(users)
+          .set({
+            email: userData.email,
+            password: password || existing.password,
+            firstName: userData.firstName || existing.firstName,
+            lastName: userData.lastName || existing.lastName,
+            profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.email, userData.email))
+          .returning();
+
+        console.log(`🔄 User updated: ${updated.email}`);
+        return updated;
+      } else {
+        return await this.createUser({
           email: userData.email,
-          password: passwordToSave || existing.password,
-          firstName: userData.firstName || existing.firstName,
-          lastName: userData.lastName || existing.lastName,
-          profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.email, userData.email))
-        .returning();
-
-      console.log(`🔄 User updated: ${updated.email}`);
-      return updated;
-    } else {
-      return await this.createUser({
-        email: userData.email,
-        password: passwordToSave,
-        firstName: userData.firstName || "User",
-        lastName: userData.lastName || "",
-        profileImageUrl: userData.profileImageUrl || "",
-      });
+          password,
+          firstName: userData.firstName || "User",
+          lastName: userData.lastName || "",
+          profileImageUrl: userData.profileImageUrl || "",
+        });
+      }
+    } catch (error: any) {
+      console.error("❌ Error upserting user:", error);
+      throw new Error("Failed to upsert user");
     }
-  } catch (error: any) {
-    console.error("❌ Error upserting user:", error);
-    throw new Error("Failed to upsert user");
   }
-}
 
-
-
-  // ====== PROJECT OPERATIONS ======
+  // ===== PROJECT OPERATIONS =====
   async getUserProjects(userId: string): Promise<Project[]> {
     return await db
       .select()
@@ -146,7 +143,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(projects).where(eq(projects.id, id));
   }
 
-  // ====== TEMPLATE OPERATIONS ======
+  // ===== TEMPLATE OPERATIONS =====
   async getTemplates(): Promise<Template[]> {
     return await db
       .select()

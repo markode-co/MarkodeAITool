@@ -1,41 +1,64 @@
+// server/auth-google.ts
 import express from "express";
 import passport from "passport";
 import session from "express-session";
-import jwt from "jsonwebtoken";
 import { generateToken } from "./auth.js";
+import type { SessionUser } from "./passport.js";
 
 const router = express.Router();
 
+// ================================
+// إعداد جلسات Express
+// ================================
 router.use(
   session({
-    secret: process.env.SESSION_SECRET || "supersecret",
+    secret: process.env.SESSION_SECRET || "supersecret", // يجب تغييره في الإنتاج
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // عدم إنشاء جلسة جديدة إذا لم تُستخدم
+    cookie: {
+      httpOnly: true, // يحمي من وصول JS في المتصفح
+      secure: process.env.NODE_ENV === "production", // يستخدم HTTPS في الإنتاج
+      maxAge: 24 * 60 * 60 * 1000, // 1 يوم
+    },
   })
 );
 
 router.use(passport.initialize());
 router.use(passport.session());
 
-// رابط المصادقة
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+// ================================
+// رابط المصادقة: Google OAuth
+// ================================
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account", // يتيح اختيار الحساب كل مرة
+  })
+);
 
-// رابط callback
+// ================================
+// رابط callback بعد Google OAuth
+// ================================
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { failureRedirect: "/login", session: true }),
   (req, res) => {
-    const user = req.user as any;
+    // نوع المستخدم
+    const user = req.user as SessionUser | undefined;
     if (!user) return res.redirect("/login");
 
+    // توليد JWT
     const token = generateToken({
       id: user.id,
-      name: user.firstName + " " + user.lastName,
+      name: `${user.firstName} ${user.lastName}`.trim(),
       email: user.email,
       picture: user.profileImageUrl,
     });
 
-    res.redirect(`https://markode-ai-tool.onrender.com/auth/callback?token=${token}`);
+    // إعادة التوجيه إلى الواجهة الأمامية مع التوكن
+    const frontendCallback = process.env.FRONTEND_CALLBACK_URL || "https://markode-ai-tool.onrender.com/auth/callback";
+    res.redirect(`${frontendCallback}?token=${token}`);
   }
 );
 

@@ -11,13 +11,17 @@ export default function Signup() {
     password: "",
   });
 
+  // تحديث القيم عند الكتابة
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // إرسال البيانات للسيرفر
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // منع الضغط المزدوج
     setLoading(true);
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/signup`, {
         method: "POST",
@@ -26,7 +30,11 @@ export default function Signup() {
       });
 
       const data = await res.json();
+
       if (res.ok) {
+        // تخزين التوكن في localStorage للحفاظ على تسجيل الدخول
+        if (data.token) localStorage.setItem("token", data.token);
+
         alert("تم إنشاء الحساب بنجاح ✅");
         navigate("/login");
       } else {
@@ -40,6 +48,7 @@ export default function Signup() {
     }
   };
 
+  // تسجيل الدخول باستخدام Google
   const handleGoogleSignup = () => {
     window.location.href = `${import.meta.env.VITE_API_URL || ""}/auth/google`;
   };

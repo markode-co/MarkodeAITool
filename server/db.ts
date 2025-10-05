@@ -4,7 +4,7 @@ import * as schema from "../shared/schema.js";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { Client } from "pg";
+import { Client as NodePgClient } from "pg";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -15,13 +15,13 @@ if (!process.env.DATABASE_URL) {
 let db: any;
 
 if (isProduction) {
-  // ✅ الإنتاج: استخدام drizzle-orm/neon-http
-  const client = neon(process.env.DATABASE_URL!);
-  db = drizzleNeon(client, { schema });
-  console.log("✅ Connected to Neon PostgreSQL (Production)");
+  // 🚀 استخدام قاعدة بيانات Neon في بيئة الإنتاج
+  const sql = neon(process.env.DATABASE_URL!);
+  db = drizzleNeon(sql, { schema });
+  console.log("✅ Connected to Neon Database (Production)");
 } else {
-  // 💻 التطوير المحلي
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  // 💻 استخدام PostgreSQL المحلي أثناء التطوير
+  const client = new NodePgClient({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   db = drizzlePg(client, { schema });
   console.log("✅ Connected to Local PostgreSQL (Development)");

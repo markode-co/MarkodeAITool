@@ -1,3 +1,4 @@
+// server/storage.ts
 import bcrypt from "bcryptjs";
 import {
   users,
@@ -15,20 +16,17 @@ import { db } from "./db.js";
 import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
 
-  // Project operations
   getUserProjects(userId: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, updates: Partial<InsertProject>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
 
-  // Template operations
   getTemplates(): Promise<Template[]>;
   getTemplate(id: string): Promise<Template | undefined>;
   createTemplate(template: InsertTemplate): Promise<Template>;
@@ -36,7 +34,6 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // ====== USER OPERATIONS ======
-
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -49,10 +46,9 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
     try {
-      // 🧩 تشفير كلمة المرور إن لم تكن مشفرة مسبقًا
-      let passwordToSave = userData.password;
-      if (!userData.password.startsWith("$2a$")) {
-        passwordToSave = await bcrypt.hash(userData.password, 10);
+      let passwordToSave = userData.password || "";
+      if (!passwordToSave.startsWith("$2a$") && passwordToSave !== "") {
+        passwordToSave = await bcrypt.hash(passwordToSave, 10);
       }
 
       const [newUser] = await db
@@ -60,6 +56,9 @@ export class DatabaseStorage implements IStorage {
         .values({
           ...userData,
           password: passwordToSave,
+          firstName: userData.firstName || "User",
+          lastName: userData.lastName || "",
+          profileImageUrl: userData.profileImageUrl || "",
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -78,12 +77,14 @@ export class DatabaseStorage implements IStorage {
       const existing = await this.getUserByEmail(userData.email);
 
       if (existing) {
-        // 🔁 تحديث المستخدم الحالي
         const [updated] = await db
           .update(users)
           .set({
             ...userData,
             updatedAt: new Date(),
+            firstName: userData.firstName || existing.firstName,
+            lastName: userData.lastName || existing.lastName,
+            profileImageUrl: userData.profileImageUrl || existing.profileImageUrl,
           })
           .where(eq(users.email, userData.email))
           .returning();
@@ -91,15 +92,13 @@ export class DatabaseStorage implements IStorage {
         console.log(`🔄 User updated: ${updated.email}`);
         return updated;
       } else {
-       return await this.createUser({
-  email: userData.email,
-  password: userData.password || "",
-  firstName: userData.firstName || "User",
-  lastName: userData.lastName || "",
-  profileImageUrl: userData.profileImageUrl || "",
-});
-
-
+        return await this.createUser({
+          email: userData.email,
+          password: userData.password || "",
+          firstName: userData.firstName || "User",
+          lastName: userData.lastName || "",
+          profileImageUrl: userData.profileImageUrl || "",
+        });
       }
     } catch (error: any) {
       console.error("❌ Error upserting user:", error.message);
@@ -108,7 +107,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ====== PROJECT OPERATIONS ======
-
   async getUserProjects(userId: string): Promise<Project[]> {
     return await db
       .select()
@@ -141,7 +139,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ====== TEMPLATE OPERATIONS ======
-
   async getTemplates(): Promise<Template[]> {
     return await db
       .select()

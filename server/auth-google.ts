@@ -1,8 +1,8 @@
 import express from "express";
 import passport from "passport";
 import session from "express-session";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import jwt from "jsonwebtoken";
+import { generateToken } from "./auth.js";
 
 const router = express.Router();
 
@@ -17,53 +17,26 @@ router.use(
 router.use(passport.initialize());
 router.use(passport.session());
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
-    },
-    async (_accessToken, _refreshToken, profile, done) => {
-      const user = {
-        id: profile.id,
-        name: profile.displayName,
-        email: profile.emails?.[0].value,
-        picture: profile.photos?.[0].value,
-      };
-      done(null, user);
-    }
-  )
-);
+// رابط المصادقة
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj: any, done) => done(null, obj));
-
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
+// رابط callback
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     const user = req.user as any;
+    if (!user) return res.redirect("/login");
 
-    const token = jwt.sign(
-      {
-        sub: user.id,
-        name: user.name,
-        email: user.email,
-        picture: user.picture,
-      },
-      process.env.JWT_SECRET || "jwtsecret",
-      { expiresIn: "7d" }
-    );
+    const token = generateToken({
+      id: user.id,
+      name: user.firstName + " " + user.lastName,
+      email: user.email,
+      picture: user.profileImageUrl,
+    });
 
     res.redirect(`https://markode-ai-tool.onrender.com/auth/callback?token=${token}`);
   }
 );
-
 
 export default router;

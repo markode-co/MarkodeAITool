@@ -1,77 +1,67 @@
-// ================================
-// 🌐 IMPORTS
-// ================================
-import type { Express } from "express";
+// server/routes.ts
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { authMiddleware, generateToken, AuthRequest } from "./auth.js";
-import { generateProjectCode, improveCode } from "./openai.js";
 import { createProjectFormSchema } from "../shared/schema.js";
 import { z } from "zod";
 import Stripe from "stripe";
 import bcrypt from "bcryptjs";
 import passport from "passport";
 import "./passport.js";
+import authGoogleRoutes from "./auth-google.js";
+import { PRICING_PLANS, createPaymentIntentSchema, type PlanId } from "./pricing.js";
+import { improveCode } from "./openai.js";
 
-// ================================
-// 💳 STRIPE INITIALIZATION
-// ================================
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("❌ Missing required Stripe secret: STRIPE_SECRET_KEY");
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-08-27.basil",
-});
-
-console.log("🧭 Router initialized");
-
-const isPayPalAvailable =
-  process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET;
-
-// ================================
-// 🚀 REGISTER ROUTES FUNCTION
-// ================================
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
-  // 🔑 GOOGLE AUTH CALLBACK
+  // GOOGLE AUTH ROUTES
   // ================================
+  app.use("/auth", authGoogleRoutes);
+
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("❌ Missing required Stripe secret: STRIPE_SECRET_KEY");
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-08-27.basil",
+  });
+
+  const isPayPalAvailable =
+    !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET;
+
+  // GOOGLE AUTH CALLBACK
   app.get(
     "/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/login" }),
-    (req, res) => {
+    async (req: Request, res: Response) => {
       const user = req.user as any;
-
-      if (!user) {
-        return res.redirect("https://markode-ai-tool.onrender.com/login");
-      }
+      if (!user) return res.redirect("/login");
 
       const token = generateToken({
         id: user.id,
-        name: user.firstName,
+        name: user.firstName || "User",
         email: user.email,
-        picture: user.profileImageUrl,
+        picture: user.profileImageUrl || undefined,
       });
 
-      res.redirect(`https://markode-ai-tool.onrender.com/auth/callback?token=${token}`);
+      res.redirect(`/auth/callback?token=${token}`);
     }
   );
 
   // ================================
-  // 🧍 SIGNUP ROUTE
+  // SIGNUP
   // ================================
-  app.post("/api/signup", async (req, res) => {
+  app.post("/api/signup", async (req: Request, res: Response) => {
     try {
       const { name, email, password } = req.body;
 
-      if (!name || !email || !password) {
+      if (!name || !email || !password)
         return res.status(400).json({ message: "جميع الحقول مطلوبة" });
-      }
 
       const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
+      if (existingUser)
         return res.status(400).json({ message: "البريد الإلكتروني مستخدم مسبقًا" });
-      }
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -83,7 +73,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImageUrl: "",
       });
 
-      res.json({ message: "تم إنشاء الحساب بنجاح", user: newUser });
+      const token = generateToken({
+        id: newUser.id,
+        name: newUser.firstName,
+        email: newUser.email,
+        picture: newUser.profileImageUrl || undefined,
+      });
+
+      res.json({ message: "تم إنشاء الحساب بنجاح", user: newUser, token });
     } catch (error) {
       console.error("❌ Signup error:", error);
       res.status(500).json({ message: "حدث خطأ أثناء التسجيل" });
@@ -91,31 +88,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // 🔐 LOGIN ROUTE
+  // LOGIN
   // ================================
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
-
-      if (!email || !password) {
+      if (!email || !password)
         return res.status(400).json({ message: "Email and password are required" });
-      }
 
       const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
+      if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
+      const validPassword = await bcrypt.compare(password, user.password || "");
+      if (!validPassword)
         return res.status(401).json({ message: "Invalid email or password" });
-      }
 
       const token = generateToken({
         id: user.id,
-        name: user.firstName,
+        name: user.firstName || "User",
         email: user.email,
-        picture: user.profileImageUrl,
+        picture: user.profileImageUrl || undefined,
       });
 
       res.json({ message: "Login successful", token, user });
@@ -126,53 +118,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // 🧾 GET AUTH USER
+  // AUTH USER INFO
   // ================================
-  app.get("/api/auth/user", authMiddleware, async (req: AuthRequest, res) => {
+  app.get("/api/auth/user", authMiddleware, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const authReq = req as AuthRequest;
+      const userId = authReq.user?.sub;
+      if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+      const userData = await storage.getUser(userId);
+      if (!userData) return res.status(404).json({ message: "User not found" });
+
+      res.json(userData);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
   // ================================
-  // 🧩 PROJECT ROUTES
+  // PROJECT ROUTES
   // ================================
-
-  // ✅ CREATE PROJECT
-  app.post("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
+  app.post("/api/projects", authMiddleware, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.sub;
+      const authReq = req as AuthRequest;
+      const userId = authReq.user!.sub;
       const validatedData = createProjectFormSchema.parse(req.body);
 
       const project = await storage.createProject({
-        ...(validatedData as { name: string; framework: string }),
+        ...validatedData,
         userId,
         status: "building",
       });
-
-      console.log(`🚀 Starting code generation for project ${project.id}...`);
-
-      generateProjectCode(
-        validatedData.prompt,
-        validatedData.framework,
-        validatedData.language || undefined
-      )
-        .then(async (generatedCode: any) => {
-          console.log(`✅ Code generation successful for project ${project.id}`);
-          await storage.updateProject(project.id, {
-            sourceCode: generatedCode,
-            status: "ready",
-          });
-        })
-        .catch(async (error: unknown) => {
-          console.error(`❌ Error generating code for project ${project.id}:`, error);
-          await storage.updateProject(project.id, { status: "error" });
-        });
 
       res.json(project);
     } catch (error) {
@@ -184,75 +161,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ✅ UPDATE PROJECT
-  app.put("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
+  app.put("/api/projects/:id", authMiddleware, async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
+      const userId = authReq.user!.sub;
+
       const project = await storage.getProject(id);
-
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== userId) return res.status(403).json({ message: "Access denied" });
 
-      const updated = await storage.updateProject(id, { ...req.body, userId: req.user.sub });
+      const updated = await storage.updateProject(id, { ...req.body, userId });
       res.json(updated);
     } catch (error) {
-      console.error("Error updating project:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to update project" });
     }
   });
 
-  // ✅ DELETE PROJECT
-  app.delete("/api/projects/:id", authMiddleware, async (req: AuthRequest, res) => {
+  app.delete("/api/projects/:id", authMiddleware, async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const project = await storage.getProject(id);
+      const userId = authReq.user!.sub;
 
+      const project = await storage.getProject(id);
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== userId) return res.status(403).json({ message: "Access denied" });
 
       await storage.deleteProject(id);
       res.json({ message: "Project deleted successfully" });
     } catch (error) {
-      console.error("Error deleting project:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to delete project" });
     }
   });
 
   // ================================
-  // 📦 TEMPLATE ROUTES
+  // TEMPLATE ROUTES
   // ================================
-  app.get("/api/templates", async (req, res) => {
+  app.get("/api/templates", async (_, res) => {
     try {
       const templates = await storage.getTemplates();
       res.json(templates);
     } catch (error) {
-      console.error("Error fetching templates:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to fetch templates" });
     }
   });
 
   app.get("/api/templates/:id", async (req, res) => {
     try {
-      const { id } = req.params;
-      const template = await storage.getTemplate(id);
+      const template = await storage.getTemplate(req.params.id);
       if (!template) return res.status(404).json({ message: "Template not found" });
       res.json(template);
     } catch (error) {
-      console.error("Error fetching template:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to fetch template" });
     }
   });
 
-  app.post("/api/projects/from-template/:templateId", authMiddleware, async (req: AuthRequest, res) => {
+  app.post("/api/projects/from-template/:templateId", authMiddleware, async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const { templateId } = req.params;
       const { name, description } = req.body;
-      const userId = req.user.sub;
+      const userId = authReq.user!.sub;
 
       const template = await storage.getTemplate(templateId);
-      if (!template) {
-        return res.status(404).json({ message: "Template not found" });
-      }
+      if (!template) return res.status(404).json({ message: "Template not found" });
 
       const project = await storage.createProject({
         userId,
@@ -266,108 +243,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(project);
     } catch (error) {
-      console.error("Error creating project from template:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to create project from template" });
     }
   });
 
   // ================================
-  // ⚙️ CODE IMPROVEMENT
+  // CODE IMPROVEMENT
   // ================================
-  app.post("/api/projects/:id/improve", authMiddleware, async (req: AuthRequest, res) => {
+  app.post("/api/projects/:id/improve", authMiddleware, async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
       const { code, improvements } = req.body;
-      const project = await storage.getProject(id);
+      const userId = authReq.user!.sub;
 
+      const project = await storage.getProject(id);
       if (!project) return res.status(404).json({ message: "Project not found" });
-      if (project.userId !== req.user.sub) return res.status(403).json({ message: "Access denied" });
+      if (project.userId !== userId) return res.status(403).json({ message: "Access denied" });
 
       const improvedCode = await improveCode(code, improvements);
       res.json({ improvedCode });
     } catch (error) {
-      console.error("Error improving code:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to improve code" });
     }
   });
 
   // ================================
-  // 💳 STRIPE PAYMENTS
+  // STRIPE PAYMENTS
   // ================================
-  const PRICING_PLANS = {
-    pro: { price: 2900, name: "Pro Plan", currency: "usd" },
-    enterprise: { price: 19900, name: "Enterprise Plan", currency: "usd" },
-  } as const;
-
-  const createPaymentIntentSchema = z.object({
-    planId: z.enum(["pro", "enterprise"]),
-  });
-
-  app.post("/api/create-payment-intent", authMiddleware, async (req: AuthRequest, res) => {
+  app.post("/api/create-payment-intent", authMiddleware, async (req: Request, res: Response) => {
     try {
-      const { planId } = createPaymentIntentSchema.parse(req.body);
-      const userId = req.user?.sub || null;
+      const authReq = req as AuthRequest;
+      const { planId } = createPaymentIntentSchema.parse(req.body) as { planId: PlanId };
+      const userId = authReq.user!.sub;
 
       const plan = PRICING_PLANS[planId];
-      const metadata: any = { planId, planName: plan.name };
-      if (userId) metadata.userId = userId;
-
       const paymentIntent = await stripe.paymentIntents.create({
         amount: plan.price,
         currency: plan.currency,
         automatic_payment_methods: { enabled: true },
-        metadata,
+        metadata: { planId, planName: plan.name, userId },
       });
 
-      res.json({
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-      });
+      res.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
     } catch (error: any) {
-      console.error("Error creating payment intent:", error);
-      res.status(500).json({ message: "Error creating payment intent: " + error.message });
+      console.error(error);
+      res.status(500).json({ message: error.message });
     }
   });
 
   // ================================
-  // 💰 PAYPAL ROUTES
+  // PAYPAL ROUTES
   // ================================
   app.get("/api/paypal/setup", async (req, res) => {
-    if (!isPayPalAvailable)
-      return res.status(503).json({ error: "PayPal not configured" });
-    try {
-      const { loadPaypalDefault } = await import("./paypal.js");
-      await loadPaypalDefault(req, res);
-    } catch {
-      res.status(500).json({ error: "PayPal service unavailable" });
-    }
+    if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
+    const { loadPaypalDefault } = await import("./paypal.js");
+    await loadPaypalDefault(req, res);
   });
 
   app.post("/api/paypal/order", async (req, res) => {
-    if (!isPayPalAvailable)
-      return res.status(503).json({ error: "PayPal not configured" });
-    try {
-      const { createPaypalOrder } = await import("./paypal.js");
-      await createPaypalOrder(req, res);
-    } catch {
-      res.status(500).json({ error: "PayPal service unavailable" });
-    }
+    if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
+    const { createPaypalOrder } = await import("./paypal.js");
+    await createPaypalOrder(req, res);
   });
 
   app.post("/api/paypal/order/:orderID/capture", async (req, res) => {
-    if (!isPayPalAvailable)
-      return res.status(503).json({ error: "PayPal not configured" });
-    try {
-      const { capturePaypalOrder } = await import("./paypal.js");
-      await capturePaypalOrder(req, res);
-    } catch {
-      res.status(500).json({ error: "PayPal service unavailable" });
-    }
+    if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });
+    const { capturePaypalOrder } = await import("./paypal.js");
+    await capturePaypalOrder(req, res);
   });
 
-  // ================================
-  // ✅ RETURN SERVER INSTANCE
-  // ================================
-  const httpServer = createServer(app);
-  return httpServer;
+  const server = createServer(app);
+  return server;
 }

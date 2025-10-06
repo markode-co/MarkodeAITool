@@ -27,8 +27,14 @@ passport.use(
     async (_accessToken, _refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
-        if (!email) return done(new Error("لم يتم العثور على بريد إلكتروني في حساب Google"), false);
+        if (!email) {
+          return done(
+            new Error("❌ لم يتم العثور على بريد إلكتروني في حساب Google"),
+            false
+          );
+        }
 
+        // Upsert user in DB
         const dbUser: DBUser = await storage.upsertUser({
           email,
           firstName: profile.name?.givenName || "User",
@@ -55,12 +61,12 @@ passport.use(
 );
 
 // ===== Passport Sessions =====
-// استخدام any لتجاوز تعارض TypeScript
+// حل TypeScript: استخدام أي لتجاوز تعارض النوع
 passport.serializeUser((user: any, done) => {
-  done(null, user.id); // نخزن فقط id في الجلسة
+  done(null, user.id);
 });
 
-passport.deserializeUser(async (id: any, done) => {
+passport.deserializeUser(async (id: string, done) => {
   try {
     const dbUser = await storage.getUser(id);
     if (!dbUser) return done(null, false);
@@ -75,6 +81,7 @@ passport.deserializeUser(async (id: any, done) => {
 
     done(null, user);
   } catch (error) {
+    console.error("❌ خطأ أثناء استرجاع المستخدم من الجلسة:", error);
     done(error as Error, false);
   }
 });

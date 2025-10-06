@@ -51,13 +51,14 @@ app.use(passport.session());
 // ================================
 // Request Logging Middleware
 // ================================
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const pathReq = req.path;
   let capturedJsonResponse: Record<string, any> | undefined;
 
+  // Override res.json to capture JSON responses
   const originalResJson = res.json.bind(res);
-  res.json = function (bodyJson, ...args) {
+  res.json = (bodyJson, ...args) => {
     capturedJsonResponse = bodyJson;
     return originalResJson(bodyJson, ...args);
   };
@@ -67,7 +68,7 @@ app.use((req, res, next) => {
     if (pathReq.startsWith("/api")) {
       let logLine = `${req.method} ${pathReq} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 120) logLine = logLine.slice(0, 119) + "…"; // أطول قليلاً لراحة القراءة
       log(logLine);
     }
   });

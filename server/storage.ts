@@ -43,7 +43,9 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> {
+  async createUser(
+    userData: Omit<User, "id" | "createdAt" | "updatedAt">
+  ): Promise<User> {
     try {
       let password = userData.password || "";
       if (password && !password.startsWith("$2a$")) {
@@ -66,7 +68,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`✅ User created: ${newUser.email}`);
       return newUser;
     } catch (error: any) {
-      console.error("❌ Error creating user:", error.message);
+      console.error("❌ Error creating user:", error.message || error);
       throw new Error("Failed to create user");
     }
   }
@@ -106,7 +108,7 @@ export class DatabaseStorage implements IStorage {
         });
       }
     } catch (error: any) {
-      console.error("❌ Error upserting user:", error);
+      console.error("❌ Error upserting user:", error.message || error);
       throw new Error("Failed to upsert user");
     }
   }
@@ -130,7 +132,10 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project> {
+  async updateProject(
+    id: string,
+    updates: Partial<InsertProject>
+  ): Promise<Project> {
     const [updated] = await db
       .update(projects)
       .set({ ...updates, updatedAt: new Date() })

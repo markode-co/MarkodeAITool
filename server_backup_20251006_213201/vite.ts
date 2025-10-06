@@ -4,13 +4,17 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
-/** ✅ __dirname في ESM */
+/**
+ * ✅ __dirname في ESM
+ */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** ✅ تسجيل الأحداث */
+/**
+ * ✅ تسجيل الأحداث
+ */
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -21,7 +25,9 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-/** ✅ إعداد Vite أثناء التطوير */
+/**
+ * ✅ إعداد Vite أثناء التطوير
+ */
 export async function setupVite(app: Express, server: Server) {
   const clientRoot = path.resolve(process.cwd(), "client");
   const clientTemplate = path.join(clientRoot, "index.html");
@@ -31,9 +37,6 @@ export async function setupVite(app: Express, server: Server) {
     server: {
       middlewareMode: true,
       hmr: { server },
-      watch: {
-        usePolling: true,
-      },
       allowedHosts: ["localhost", "127.0.0.1"],
     },
     appType: "custom",
@@ -57,9 +60,11 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
-/** ✅ تقديم الملفات الثابتة أثناء الإنتاج */
+/**
+ * ✅ تقديم الملفات الثابتة أثناء الإنتاج
+ */
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "../client/dist");
+  const distPath = path.resolve(__dirname, "public");
   const indexPath = path.join(distPath, "index.html");
 
   if (!fs.existsSync(indexPath)) {
@@ -67,9 +72,9 @@ export function serveStatic(app: Express) {
     throw new Error("❌ لم يتم العثور على index.html داخل مجلد البناء!");
   }
 
+  // express.static يدعم المسار العادي
   app.use(express.static(distPath));
 
-  // جميع مسارات React
   const reactRoutes = [
     "/", "/landing", "/login", "/signup", "/about", "/dashboard",
     "/profile", "/settings", "/contact", "/pricing", "/features"
@@ -77,7 +82,8 @@ export function serveStatic(app: Express) {
 
   reactRoutes.forEach((route) => {
     app.get(route, (_req: Request, res: Response) => {
-      res.sendFile(indexPath);
+      // ❗ تحويل المسار إلى URL صالح لـ ESM على Windows
+      res.sendFile(.href);
     });
   });
 
@@ -92,6 +98,6 @@ export function serveStatic(app: Express) {
 
   // أي مسار آخر إلى React
   app.get("*", (_req: Request, res: Response) => {
-    res.sendFile(indexPath);
+    res.sendFile(.href);
   });
 }

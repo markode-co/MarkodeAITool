@@ -12,14 +12,12 @@ import authGoogleRoutes from "./auth-google.js";
 import { PRICING_PLANS, createPaymentIntentSchema, type PlanId } from "./pricing.js";
 import { improveCode } from "./openai.js";
 import path from "path";
-import { fileURLToPath, pathToFileURL } from "url";
+import { fileURLToPath } from "url";
 
-// ✅ حل مشكلة __dirname في ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ استدعاء passport لتسجيل الاستراتيجيات
-import("./passport.js");
+import(path.join(__dirname, "passport.js"));
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
@@ -38,9 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const isPayPalAvailable =
     !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET;
 
-  // ================================
   // GOOGLE AUTH CALLBACK
-  // ================================
   app.get(
     "/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/login" }),
@@ -65,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/signup", async (req: Request, res: Response) => {
     try {
       const { name, email, password } = req.body;
+
       if (!name || !email || !password)
         return res.status(400).json({ message: "جميع الحقول مطلوبة" });
 
@@ -73,6 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "البريد الإلكتروني مستخدم مسبقًا" });
 
       const hashedPassword = await bcrypt.hash(password, 10);
+
       const newUser = await storage.createUser({
         firstName: name,
         lastName: "",
@@ -105,8 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
 
       const user = await storage.getUserByEmail(email);
-      if (!user)
-        return res.status(401).json({ message: "Invalid email or password" });
+      if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
       const validPassword = await bcrypt.compare(password, user.password || "");
       if (!validPassword)
@@ -170,9 +167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ================================
-  // PUT/DELETE PROJECT
-  // ================================
   app.put("/api/projects/:id", authMiddleware, async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthRequest;
@@ -210,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // TEMPLATES
+  // TEMPLATE ROUTES
   // ================================
   app.get("/api/templates", async (_, res) => {
     try {
@@ -233,9 +227,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ================================
-  // CREATE PROJECT FROM TEMPLATE
-  // ================================
   app.post("/api/projects/from-template/:templateId", authMiddleware, async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthRequest;
@@ -264,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // IMPROVE CODE
+  // CODE IMPROVEMENT (محسن)
   // ================================
   app.post("/api/projects/:id/improve", authMiddleware, async (req: Request, res: Response) => {
     try {
@@ -288,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // STRIPE PAYMENTS
+  // STRIPE PAYMENTS (محسن)
   // ================================
   app.post("/api/create-payment-intent", authMiddleware, async (req: Request, res: Response) => {
     try {
@@ -305,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!plan) return res.status(404).json({ message: "Plan not found" });
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(plan.price),
+        amount: Math.round(plan.price), // بالوحدة الصحيحة
         currency: plan.currency,
         automatic_payment_methods: { enabled: true },
         metadata: { planId, planName: plan.name, userId },
@@ -319,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================================
-  // PAYPAL ROUTES
+  // PAYPAL ROUTES (محسنة)
   // ================================
   app.get("/api/paypal/setup", async (req, res) => {
     if (!isPayPalAvailable) return res.status(503).json({ error: "PayPal not configured" });

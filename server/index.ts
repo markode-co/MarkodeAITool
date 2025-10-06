@@ -1,127 +1,52 @@
-// server.ts
-import express, { type Request, Response, NextFunction } from "express";
+// server/index.ts
+import express, { type Express, type Request, type Response } from "express";
 import path from "path";
-import cors from "cors";
+import { fileURLToPath, pathToFileURL } from "url";
 import session from "express-session";
-import "dotenv/config";
-import "module-alias/register.js";
-
 import passport from "./passport.js";
 import authGoogleRouter from "./auth-google.js";
 import { registerRoutes } from "./routes.js";
-import { setupVite, serveStatic, log } from "./vite.js";
 
-const app = express();
-const PORT = Number(process.env.PORT) || 5050;
+// ✅ تصحيح __dirname في ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// ================================
-// CORS Configuration
-// ================================
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://markode-ai-tool.onrender.com",
-    ],
-    credentials: true,
-  })
-);
+const app: Express = express();
+const PORT = Number(process.env.PORT) || 3000;
 
-// ================================
-// Body Parsing
-// ================================
+// ✅ Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// ================================
-// Session & Passport
-// ================================
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "default_secret",
+    secret: process.env.SESSION_SECRET || "secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === "production" },
   })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-// ================================
-// Request Logging Middleware
-// ================================
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const start = Date.now();
-  const pathReq = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined;
-
-  // Override res.json to capture JSON responses
-  const originalResJson = res.json.bind(res);
-  res.json = (bodyJson, ...args) => {
-    capturedJsonResponse = bodyJson;
-    return originalResJson(bodyJson, ...args);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (pathReq.startsWith("/api")) {
-      let logLine = `${req.method} ${pathReq} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      if (logLine.length > 120) logLine = logLine.slice(0, 119) + "…"; // أطول قليلاً لراحة القراءة
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-// ================================
-// Google Auth Routes
-// ================================
 app.use("/auth", authGoogleRouter);
 
-// ================================
-// API & App Routes
-// ================================
+// ✅ Serve client/dist as static files
+const clientDistPath = path.resolve(__dirname, "../client/dist");
+app.use(express.static(clientDistPath));
+
+// ✅ تسجيل Routes إضافية من ملفات routes.ts
 (async () => {
-  try {
-    const server = await registerRoutes(app);
+  await registerRoutes(app);
 
-    // ================================
-    // Error Handling Middleware
-    // ================================
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      console.error("❌ Server Error:", err);
-      res.status(status).json({ message });
-    });
+  // ✅ SPA fallback: تحويل المسار إلى URL لحل مشكلة Windows + ESM
+  app.get("*", (_req: Request, res: Response) => {
+    const indexUrl = pathToFileURL(path.join(clientDistPath, "index.html")).href;
+    res.sendFile(indexUrl);
+  });
 
-    // ================================
-    // Vite Dev / Production Static
-    // ================================
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-
-    // ================================
-    // SPA Fallback
-    // ================================
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(process.cwd(), "dist", "index.html"));
-    });
-
-    // ================================
-    // Start Server
-    // ================================
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("❌ Failed to start server:", error);
-    process.exit(1);
-  }
+  // ✅ بدء السيرفر
+  app.listen(PORT, () => {
+    console.log(`✅ Connected to Neon Database (Production)`);
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 })();

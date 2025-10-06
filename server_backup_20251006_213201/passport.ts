@@ -34,7 +34,7 @@ passport.use(
           );
         }
 
-        // Upsert user في قاعدة البيانات
+        // Upsert user in DB
         const dbUser: DBUser = await storage.upsertUser({
           email,
           firstName: profile.name?.givenName || "User",
@@ -43,7 +43,6 @@ passport.use(
           profileImageUrl: profile.photos?.[0]?.value || "",
         });
 
-        // إنشاء كائن الجلسة
         const user: SessionUser = {
           id: dbUser.id,
           email: dbUser.email,
@@ -61,13 +60,10 @@ passport.use(
   )
 );
 
-/**
- * ===== Passport Sessions =====
- * لحل مشكلة TypeScript، نستخدم أي مع serializeUser/deserializeUser
- */
+// ===== Passport Sessions =====
+// حل TypeScript: استخدام أي لتجاوز تعارض النوع
 passport.serializeUser((user: any, done) => {
-  // نمرر معرف المستخدم فقط للجلسة
-  done(null, (user as SessionUser).id);
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id: string, done) => {

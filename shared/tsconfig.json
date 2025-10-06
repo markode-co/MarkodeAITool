@@ -1,8 +1,16 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "../dist/shared",
     "rootDir": "./",
-    "outDir": "../dist/shared"
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
   },
   "include": ["**/*.ts"]
 }

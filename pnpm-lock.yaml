@@ -110,6 +110,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.60.5
         version: 5.90.2(react@18.3.1)
+      all:
+        specifier: ^0.0.0
+        version: 0.0.0
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -2070,6 +2073,9 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
+
+  all@0.0.0:
+    resolution: {integrity: sha512-0oKlfNVv2d+d7c1gwjGspzgbwot47PGQ4b3v1ccx4mR8l9P/Y6E6Dr/yE8lNT63EcAKEbHo6UG3odDpC/NQcKw==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -5547,6 +5553,8 @@ snapshots:
       negotiator: 0.6.3
 
   agent-base@7.1.4: {}
+
+  all@0.0.0: {}
 
   ansi-regex@5.0.1: {}
 

@@ -5,6 +5,7 @@
     "module": "ESNext",
     "declaration": true,
     "declarationMap": true,
+    "composite": true,         
     "outDir": "../dist/shared",
     "rootDir": "./",
     "strict": true,

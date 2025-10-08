@@ -20,7 +20,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "client"],
-  "references": [{ "path": "../shared" }]
+  "include": ["**/*.ts", "../shared/**/*.ts"],
+  "exclude": ["node_modules", "dist", "client"]
 }

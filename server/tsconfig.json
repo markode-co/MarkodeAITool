@@ -6,7 +6,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "../dist/server",
-    "rootDir": ".",
+    "rootDir": "..",
     "baseUrl": "..",
     "esModuleInterop": true,
     "resolveJsonModule": true,
@@ -20,6 +20,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts", "../shared/**/*.ts"],
+  "include": ["server/**/*.ts", "shared/**/*.ts"],
   "exclude": ["node_modules", "dist", "client"]
 }

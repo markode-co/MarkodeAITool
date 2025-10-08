@@ -5,7 +5,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import session, { type SessionOptions } from "express-session";
 import passport from "passport";
-import { registerRoutes } from "./routes.js"; // ✅ أضفنا .js
+import { registerRoutes } from "./routes.js"; // ✅ لاحظ وجود .js
 import { Redis } from "ioredis";
 import * as ConnectRedis from "connect-redis";
 
@@ -28,9 +28,8 @@ const redisClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379")
 redisClient.on("connect", () => console.log("✅ Connected to Redis"));
 redisClient.on("error", (err: Error) => console.error("Redis Error:", err));
 
-// ✅ إنشاء RedisStore متوافق مع TypeScript + ESM
-const ConnectRedisFactory = (ConnectRedis as unknown as any).default ?? (ConnectRedis as unknown as any);
-const RedisStore = ConnectRedisFactory(session) as any;
+// ✅ RedisStore جاهز للعمل مع ESM + TypeScript
+const RedisStore = (ConnectRedis as any)(session);
 
 // ====================
 // Middlewares
@@ -45,7 +44,7 @@ const sessionOptions: SessionOptions = {
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    maxAge: 1000 * 60 * 60 * 24, // 1 يوم
   },
 };
 
@@ -65,6 +64,7 @@ app.use(express.static(clientDistPath));
 (async () => {
   await registerRoutes(app);
 
+  // جميع المسارات غير المعروفة توجه لـ index.html
   app.get("*", (req: Request, res: Response) => {
     const indexFile = path.join(clientDistPath, "index.html");
     if (fs.existsSync(indexFile)) res.sendFile(indexFile);
